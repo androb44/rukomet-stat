@@ -2,47 +2,63 @@
 
 ## Overview
 
-A mobile-first handball statistics application for tracking live matches, managing teams and players, and recording match events. The app provides real-time scoring capabilities, event logging (goals, saves, turnovers, cards), and team roster management. Built as a full-stack TypeScript application with a React frontend and Express backend.
+A mobile-first handball statistics application for tracking live matches, managing teams and players, and recording match events. The app provides real-time scoring capabilities, event logging with player attribution (goals, saves, turnovers, cards), and team roster management. Built with a lightweight vanilla JavaScript frontend and Express backend for maximum mobile stability.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **v4.0+ Player Management**: Added team roster management and player attribution to game events
+  - Teams view now shows clickable team cards that open Team Details
+  - Team Details shows player roster with add/delete functionality
+  - Match events now prompt for player selection via modal
+  - Event log displays player names (#7 John Hansen format)
+- **v4.0 Live Stats**: Match Details view with timer, event recording, event log, and stats summary
+- **v3.0 Architecture Change**: Replaced React/Vite with vanilla HTML/CSS/JS for mobile stability
+
 ## System Architecture
 
 ### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **Routing**: Wouter (lightweight React router)
-- **State Management**: TanStack React Query for server state caching and synchronization
-- **Styling**: Tailwind CSS with CSS variables for theming
-- **UI Components**: shadcn/ui component library (Radix UI primitives with custom styling)
-- **Animations**: Framer Motion for page transitions and micro-interactions
-- **Build Tool**: Vite with hot module replacement
+- **Framework**: Vanilla JavaScript (no build process) - chosen for maximum mobile browser stability
+- **Location**: Single file at `public/index.html` with inline CSS and JS
+- **Styling**: Custom CSS with mobile-first design
+- **Navigation**: Bottom navigation bar with Home, Matches, Teams tabs
+- **Views**: Home, Teams, Add Team, Team Details, Matches, Add Match, Match Details
 
-The frontend follows a mobile-first design pattern with a bottom navigation bar. Pages are organized in `client/src/pages/` with reusable components in `client/src/components/`. Custom hooks in `client/src/hooks/` abstract API calls using React Query.
+The frontend uses a simple view-based navigation pattern where views are shown/hidden with the `.hidden` class. All state is managed in global JavaScript variables.
 
 ### Backend Architecture
 - **Framework**: Express 5 on Node.js
 - **Database ORM**: Drizzle ORM with PostgreSQL
 - **Schema Validation**: Zod with drizzle-zod integration
-- **API Design**: REST endpoints defined in `shared/routes.ts` with type-safe request/response schemas
+- **API Design**: REST endpoints defined in `shared/routes.ts`
 
-The server uses a storage abstraction layer (`server/storage.ts`) implementing the `IStorage` interface, making it easy to swap database implementations. Routes are registered in `server/routes.ts` with Zod validation for input parsing.
+The server uses a storage abstraction layer (`server/storage.ts`) implementing the `IStorage` interface. Routes are registered in `server/routes.ts` with Zod validation.
 
-### Shared Code
-The `shared/` directory contains code used by both frontend and backend:
-- `schema.ts`: Drizzle table definitions and Zod insert schemas
-- `routes.ts`: API endpoint definitions with path, method, input validation, and response schemas
+### API Endpoints
+- **Teams**: GET/POST `/api/teams`, GET `/api/teams/:id`
+- **Players**: GET `/api/players?teamId=X`, POST `/api/players`, DELETE `/api/players/:id`
+- **Matches**: GET/POST `/api/matches`, GET `/api/matches/:id`, PATCH `/api/matches/:id/status`
+- **Match Events**: POST `/api/match-events`, DELETE `/api/match-events/:id`
 
 ### Data Model
 - **Teams**: id, name, shortName (3 chars), color
 - **Players**: id, teamId, name, number, position (GK/LW/LB/CB/RB/RW/P)
-- **Matches**: id, homeTeamId, awayTeamId, date, location, scores, status (scheduled/in_progress/finished)
-- **Match Events**: id, matchId, teamId, playerId, type (goal/miss/save/turnover/cards/timeout), time
+- **Matches**: id, homeTeamId, awayTeamId, date, location, homeScore, awayScore, status (scheduled/in_progress/finished)
+- **Match Events**: id, matchId, teamId, playerId (optional), type (goal/shot/save/assist/turnover/block/yellow_card/2min/red_card), time
 
-### Development vs Production
-- Development: Vite dev server with HMR proxied through Express
-- Production: Static file serving from `dist/public` after Vite build, server bundled with esbuild
+### Key Features
+1. **Team Management**: Create teams with name, short name, and color
+2. **Player Management**: Add players with name, jersey number, and position
+3. **Match Scheduling**: Schedule matches between teams with date/location
+4. **Live Stats Tracking**: 
+   - Game timer (start/pause/reset)
+   - Event recording with player attribution
+   - Real-time score updates (goals auto-increment score)
+   - Event log with timestamps and player names
+   - Stats summary comparing both teams
 
 ## External Dependencies
 
@@ -52,15 +68,9 @@ The `shared/` directory contains code used by both frontend and backend:
 
 ### Key NPM Packages
 - `drizzle-orm` / `drizzle-zod`: Type-safe database queries and schema validation
-- `@tanstack/react-query`: Async state management with caching
-- `@radix-ui/*`: Accessible UI primitives for shadcn components
-- `framer-motion`: Animation library
-- `date-fns`: Date formatting
-- `wouter`: Lightweight client-side routing
+- `express`: Web server framework
 - `zod`: Runtime type validation
 
 ### Build & Development Tools
 - `tsx`: TypeScript execution for development
-- `vite`: Frontend build and dev server
 - `esbuild`: Server bundling for production
-- `tailwindcss`: Utility-first CSS framework
