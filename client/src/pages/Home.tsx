@@ -3,44 +3,30 @@ import { useTeams } from "@/hooks/use-teams";
 import { ScoreCard } from "@/components/ScoreCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Trophy, Activity, ArrowRight } from "lucide-react";
+import { Plus, Trophy, Activity } from "lucide-react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
 
 export default function Home() {
-  const { data: matches, isLoading: matchesLoading } = useMatches();
-  const { data: teams, isLoading: teamsLoading } = useTeams();
+  const { data: matches, isLoading: matchesLoading, error: matchesError } = useMatches();
+  const { data: teams, isLoading: teamsLoading, error: teamsError } = useTeams();
 
-  // Combine data manually since API is split
-  const enrichedMatches = matches?.map(match => ({
-    ...match,
-    homeTeam: teams?.find(t => t.id === match.homeTeamId)!,
-    awayTeam: teams?.find(t => t.id === match.awayTeamId)!,
-  })).filter(m => m.homeTeam && m.awayTeam) ?? [];
+  // Show error state
+  if (matchesError || teamsError) {
+    return (
+      <div className="min-h-screen bg-background pb-20 p-4">
+        <PageHeader title="Handball Stats" subtitle="Error loading data" />
+        <div className="text-center py-12">
+          <p className="text-destructive">Failed to load data. Please refresh.</p>
+        </div>
+      </div>
+    );
+  }
 
-  const liveMatches = enrichedMatches.filter(m => m.status === 'in_progress');
-  const recentMatches = enrichedMatches.filter(m => m.status === 'finished').slice(0, 3);
-  const upcomingMatches = enrichedMatches.filter(m => m.status === 'scheduled').slice(0, 3);
-
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
-
+  // Show loading state
   if (matchesLoading || teamsLoading) {
     return (
       <div className="min-h-screen bg-background pb-20">
-        <PageHeader title="Handball Stats" subtitle="Live updates & results" />
+        <PageHeader title="Handball Stats" subtitle="Loading..." />
         <div className="p-4 space-y-4">
           <div className="h-40 bg-muted/50 rounded-2xl animate-pulse" />
           <div className="h-40 bg-muted/50 rounded-2xl animate-pulse" />
@@ -49,6 +35,14 @@ export default function Home() {
     );
   }
 
+  // The API now returns matches with homeTeam and awayTeam included
+  const enrichedMatches = (matches || []).filter(
+    (m: any) => m.homeTeam && m.awayTeam
+  );
+
+  const liveMatches = enrichedMatches.filter((m: any) => m.status === 'in_progress');
+  const upcomingMatches = enrichedMatches.filter((m: any) => m.status === 'scheduled').slice(0, 3);
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <PageHeader 
@@ -56,38 +50,33 @@ export default function Home() {
         subtitle="Welcome back, Coach"
         action={
           <Link href="/matches">
-            <Button size="sm" variant="outline" className="rounded-full h-8">
+            <Button size="sm" variant="outline" className="rounded-full h-8" data-testid="button-view-all">
               View All
             </Button>
           </Link>
         }
       />
 
-      <motion.main 
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="max-w-4xl mx-auto p-4 space-y-8"
-      >
+      <main className="max-w-4xl mx-auto p-4 space-y-8">
         {/* Live Matches Section */}
         {liveMatches.length > 0 && (
-          <motion.section variants={item} className="space-y-4">
+          <section className="space-y-4">
             <div className="flex items-center gap-2 text-accent">
               <Activity className="w-5 h-5 animate-pulse" />
               <h2 className="text-lg font-bold tracking-tight text-foreground">Live Now</h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              {liveMatches.map(match => (
+              {liveMatches.map((match: any) => (
                 <ScoreCard key={match.id} match={match} />
               ))}
             </div>
-          </motion.section>
+          </section>
         )}
 
         {/* Quick Actions */}
-        <motion.section variants={item} className="grid grid-cols-2 gap-3">
+        <section className="grid grid-cols-2 gap-3">
           <Link href="/matches">
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-4 rounded-2xl border border-primary/10 active:scale-95 transition-transform cursor-pointer">
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-4 rounded-2xl border border-primary/10 active:scale-95 transition-transform cursor-pointer" data-testid="card-new-match">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-3">
                 <Plus className="w-6 h-6" />
               </div>
@@ -96,7 +85,7 @@ export default function Home() {
             </div>
           </Link>
           <Link href="/teams">
-            <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4 rounded-2xl border border-purple-500/10 active:scale-95 transition-transform cursor-pointer">
+            <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4 rounded-2xl border border-purple-500/10 active:scale-95 transition-transform cursor-pointer" data-testid="card-manage-teams">
               <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-600 mb-3">
                 <Trophy className="w-6 h-6" />
               </div>
@@ -104,36 +93,34 @@ export default function Home() {
               <p className="text-xs text-muted-foreground mt-1">Rosters & Players</p>
             </div>
           </Link>
-        </motion.section>
+        </section>
 
-        {/* Recent Matches */}
-        {recentMatches.length > 0 && (
-          <motion.section variants={item} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold tracking-tight">Recent Results</h2>
-            </div>
+        {/* Upcoming Matches */}
+        {upcomingMatches.length > 0 && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-bold tracking-tight">Upcoming Matches</h2>
             <div className="space-y-3">
-              {recentMatches.map(match => (
+              {upcomingMatches.map((match: any) => (
                 <ScoreCard key={match.id} match={match} />
               ))}
             </div>
-          </motion.section>
+          </section>
         )}
         
         {/* Empty State */}
         {enrichedMatches.length === 0 && (
-          <motion.div variants={item} className="text-center py-12">
+          <div className="text-center py-12">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <Trophy className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-bold">No matches found</h3>
             <p className="text-muted-foreground mt-1">Start by creating teams and scheduling a match.</p>
             <Link href="/teams">
-              <Button className="mt-4 rounded-full px-6">Create Team</Button>
+              <Button className="mt-4 rounded-full px-6" data-testid="button-create-team">Create Team</Button>
             </Link>
-          </motion.div>
+          </div>
         )}
-      </motion.main>
+      </main>
     </div>
   );
 }
