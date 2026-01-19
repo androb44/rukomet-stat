@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Navigation } from "@/components/Navigation";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useLocation } from "wouter";
 
 import NotFound from "@/pages/not-found";
@@ -28,26 +29,26 @@ function Router() {
 
 function Layout() {
   const [location] = useLocation();
-  // Hide bottom nav on specific pages if needed, e.g., live scorer
-  // For now, we keep it but it might overlap scorer drawers
-  const showNav = !location.includes('/matches/') || location === '/matches';
+  const isMatchDetail = location.includes('/matches/') && location !== '/matches';
 
   return (
     <>
       <Router />
-      <Navigation />
+      {!isMatchDetail && <Navigation />}
     </>
   );
 }
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Layout />
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Layout />
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
