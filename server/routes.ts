@@ -8,6 +8,25 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  // Static test page - NO JavaScript at all
+  app.get('/test-static', (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Static Test</title>
+</head>
+<body style="font-family: system-ui; padding: 20px; background: white;">
+  <h1 style="color: #333;">Static Test Page</h1>
+  <p>This page has NO JavaScript.</p>
+  <p>If you can read this, the server is working correctly.</p>
+  <p>Time: ${new Date().toISOString()}</p>
+</body>
+</html>`);
+  });
+
   // Teams
   app.get(api.teams.list.path, async (req, res) => {
     const teams = await storage.getTeams();
