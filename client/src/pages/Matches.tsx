@@ -36,7 +36,7 @@ export default function Matches() {
       <main className="max-w-4xl mx-auto p-4 space-y-4">
         {matchesLoading || teamsLoading ? (
           <div className="space-y-4">
-            {[1, 2, 3].map(i => <div key={i} className="h-32 bg-muted/50 rounded-2xl animate-pulse" />)}
+            {[1, 2, 3].map(i => <div key={i} className="h-32 bg-muted/50 rounded-2xl" />)}
           </div>
         ) : (
           <>

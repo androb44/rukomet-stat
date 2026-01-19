@@ -23,11 +23,6 @@ export function useMatch(id: number) {
       if (!res.ok) throw new Error("Failed to fetch match");
       return res.json();
     },
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (data && data.status === 'in_progress') return 3000;
-      return false;
-    },
   });
 }
 

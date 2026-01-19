@@ -40,7 +40,7 @@ export default function MatchDetails() {
   const awayTeam = teams?.find(t => t.id === awayTeamId);
 
   if (matchLoading || !match || !homeTeam || !awayTeam) {
-    return <div className="p-8 text-center animate-pulse">Loading match details...</div>;
+    return <div className="p-8 text-center text-muted-foreground">Loading match details...</div>;
   }
 
   const isLive = match.status === 'in_progress';
@@ -80,7 +80,7 @@ export default function MatchDetails() {
             )}
             {match.status === 'in_progress' && (
               <div className="flex flex-col items-center gap-2">
-                <span className="text-red-500 font-mono text-xl animate-pulse">LIVE</span>
+                <span className="text-red-500 font-mono text-xl font-bold">LIVE</span>
                 <Button 
                   size="sm" 
                   variant="outline" 

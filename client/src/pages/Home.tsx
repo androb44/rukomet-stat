@@ -28,8 +28,8 @@ export default function Home() {
       <div className="min-h-screen bg-background pb-20">
         <PageHeader title="Handball Stats" subtitle="Loading..." />
         <div className="p-4 space-y-4">
-          <div className="h-40 bg-muted/50 rounded-2xl animate-pulse" />
-          <div className="h-40 bg-muted/50 rounded-2xl animate-pulse" />
+          <div className="h-40 bg-muted/50 rounded-2xl" />
+          <div className="h-40 bg-muted/50 rounded-2xl" />
         </div>
       </div>
     );
@@ -62,7 +62,7 @@ export default function Home() {
         {liveMatches.length > 0 && (
           <section className="space-y-4">
             <div className="flex items-center gap-2 text-accent">
-              <Activity className="w-5 h-5 animate-pulse" />
+              <Activity className="w-5 h-5" />
               <h2 className="text-lg font-bold tracking-tight text-foreground">Live Now</h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">

@@ -10,7 +10,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertTeamSchema } from "@shared/schema";
 import { Link } from "wouter";
 import { Plus, Users, ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
 import type { InsertTeam } from "@shared/routes";
 
 export default function Teams() {
@@ -31,38 +30,31 @@ export default function Teams() {
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
-              <div key={i} className="h-20 bg-muted/50 rounded-xl animate-pulse" />
+              <div key={i} className="h-20 bg-muted/50 rounded-xl" />
             ))}
           </div>
         ) : (
           <div className="space-y-3">
-            {teams?.map((team, idx) => (
-              <motion.div
-                key={team.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-              >
-                <Link href={`/teams/${team.id}`}>
-                  <div className="group bg-card hover:bg-muted/50 border border-border/50 rounded-xl p-4 flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <div 
-                        className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-md"
-                        style={{ backgroundColor: team.color }}
-                      >
-                        {team.shortName}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground group-hover:text-primary transition-colors">
-                          {team.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">View details</p>
-                      </div>
+            {teams?.map((team) => (
+              <Link key={team.id} href={`/teams/${team.id}`}>
+                <div className="bg-card border border-border/50 rounded-xl p-4 flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center gap-4">
+                    <div 
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-md"
+                      style={{ backgroundColor: team.color }}
+                    >
+                      {team.shortName}
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                    <div>
+                      <h3 className="font-bold text-foreground">
+                        {team.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground">View details</p>
+                    </div>
                   </div>
-                </Link>
-              </motion.div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </Link>
             ))}
             
             {teams?.length === 0 && (

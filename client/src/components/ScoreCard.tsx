@@ -23,11 +23,11 @@ export function ScoreCard({ match, variant = "detailed" }: ScoreCardProps) {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-muted rounded-b-lg px-3 py-1 border-x border-b border-border/50 z-10">
           <span className={cn(
             "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5",
-            isLive ? "text-accent animate-pulse" : "text-muted-foreground"
+            isLive ? "text-accent" : "text-muted-foreground"
           )}>
             {isLive ? (
               <>
-                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                 Live
               </>
             ) : isFinished ? (
