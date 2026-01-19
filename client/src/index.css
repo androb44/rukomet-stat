@@ -1,47 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Sporty, energetic palette */
-  --font-display: 'Chakra Petch', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Primary: Electric Blue / Navy base */
-  --primary: 220 90% 56%;
-  --primary-foreground: 210 40% 98%;
-
-  /* Secondary: Deep Navy */
-  --secondary: 222 47% 11%;
-  --secondary-foreground: 210 40% 98%;
-
-  /* Accent: Energetic Orange */
-  --accent: 25 95% 53%;
-  --accent-foreground: 210 40% 98%;
-
-  /* Backgrounds */
-  --background: 210 20% 98%;
+  /* Sporty, Modern Palette - Dark Blue & Vibrant Orange */
+  --background: 220 30% 98%;
   --foreground: 222 47% 11%;
   
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  --primary: 221 83% 53%; /* Strong Blue */
+  --primary-foreground: 210 40% 98%;
   
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-
-  /* UI Elements */
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
+  --secondary: 215 25% 95%; /* Light Grey Blue */
+  --secondary-foreground: 222 47% 11%;
   
-  --destructive: 0 84.2% 60.2%;
+  --muted: 215 20% 94%;
+  --muted-foreground: 215 16% 47%;
+  
+  --accent: 25 95% 53%; /* Energetic Orange */
+  --accent-foreground: 0 0% 100%;
+  
+  --destructive: 0 84% 60%;
   --destructive-foreground: 210 40% 98%;
-
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
+  
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 221 83% 53%;
   
   --radius: 0.75rem;
 }
@@ -50,68 +39,66 @@
   --background: 222 47% 11%;
   --foreground: 210 40% 98%;
   
-  --card: 222 47% 13%;
-  --card-foreground: 210 40% 98%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 222 47% 11%;
   
-  --popover: 222 47% 11%;
-  --popover-foreground: 210 40% 98%;
-  
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  
-  --secondary: 217.2 32.6% 17.5%;
+  --secondary: 217 33% 17%;
   --secondary-foreground: 210 40% 98%;
   
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
   
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
+  --accent: 25 95% 58%;
+  --accent-foreground: 0 0% 100%;
   
-  --destructive: 0 62.8% 30.6%;
+  --destructive: 0 62% 30%;
   --destructive-foreground: 210 40% 98%;
   
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 48%;
+  --border: 217 33% 17%;
+  --input: 217 33% 17%;
+  --ring: 217 91% 60%;
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
     font-family: var(--font-body);
+    /* Safe area for mobile bottom nav */
+    padding-bottom: 5rem; 
   }
+  
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    @apply font-bold tracking-tight;
+    @apply font-bold tracking-tight text-foreground;
   }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
-}
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.5);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
-}
-
-/* Glass Effect */
-.glass-panel {
-  @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-lg dark:bg-black/50 dark:border-white/10;
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
-/* Card Hover Effect */
-.hover-card-effect {
-  @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/50;
+/* Custom Animations */
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

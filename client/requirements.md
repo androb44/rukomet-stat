@@ -1,7 +1,9 @@
 ## Packages
-date-fns | Date formatting for match schedules
-framer-motion | Smooth animations for page transitions and score updates
-recharts | Visualizing match statistics and player performance
+framer-motion | Page transitions and complex animations
+recharts | Data visualization for match statistics
+date-fns | Date formatting and manipulation
+clsx | Utility for constructing className strings conditionally
+tailwind-merge | Utility for merging Tailwind CSS classes
 
 ## Notes
 Tailwind Config - extend fontFamily:
