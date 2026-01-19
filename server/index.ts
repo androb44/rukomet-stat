@@ -75,15 +75,23 @@ app.use((req, res, next) => {
     return res.status(status).json({ message });
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
-  } else {
-    const { setupVite } = await import("./vite");
-    await setupVite(httpServer, app);
-  }
+  // Serve lightweight mobile app instead of React/Vite
+  const path = await import("path");
+  const fs = await import("fs");
+  const publicPath = path.default.resolve(process.cwd(), "public");
+  
+  // Serve static files from public directory
+  app.use(express.static(publicPath));
+  
+  // Fallback to index.html for all other routes
+  app.use((req, res) => {
+    const indexPath = path.default.resolve(publicPath, "index.html");
+    if (fs.default.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send("App not found");
+    }
+  });
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
