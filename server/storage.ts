@@ -64,12 +64,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMatches(): Promise<Match[]> {
-    return await db.select().from(matches).orderBy(desc(matches.date));
+    return await db.query.matches.findMany({
+      with: {
+        homeTeam: true,
+        awayTeam: true,
+      },
+      orderBy: desc(matches.date),
+    });
   }
 
   async getMatch(id: number): Promise<Match | undefined> {
-    const [match] = await db.select().from(matches).where(eq(matches.id, id));
-    return match;
+    return await db.query.matches.findFirst({
+      where: eq(matches.id, id),
+      with: {
+        homeTeam: true,
+        awayTeam: true,
+      },
+    });
   }
 
   async createMatch(insertMatch: InsertMatch): Promise<Match> {
