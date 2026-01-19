@@ -137,3 +137,6 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
   }
   return url;
 }
+
+// Re-export types from schema for convenience
+export type { InsertTeam, InsertPlayer, InsertMatch, InsertMatchEvent, Team, Player, Match, MatchEvent } from './schema';

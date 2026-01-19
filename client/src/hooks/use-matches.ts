@@ -88,3 +88,17 @@ export function useCreateMatchEvent() {
     },
   });
 }
+
+export function useDeleteMatchEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, matchId }: { id: number; matchId: number }) => {
+      const url = buildUrl(api.matchEvents.delete.path, { id });
+      const res = await fetch(url, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete event");
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [api.matches.get.path, variables.matchId] });
+    },
+  });
+}
