@@ -76,7 +76,7 @@ export default function Home() {
         {/* Quick Actions */}
         <section className="grid grid-cols-2 gap-3">
           <Link href="/matches">
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-4 rounded-2xl border border-primary/10 active:scale-95 transition-transform cursor-pointer" data-testid="card-new-match">
+            <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-4 rounded-2xl border border-primary/10 cursor-pointer" data-testid="card-new-match">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-3">
                 <Plus className="w-6 h-6" />
               </div>
@@ -85,8 +85,8 @@ export default function Home() {
             </div>
           </Link>
           <Link href="/teams">
-            <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4 rounded-2xl border border-purple-500/10 active:scale-95 transition-transform cursor-pointer" data-testid="card-manage-teams">
-              <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-600 mb-3">
+            <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-4 rounded-2xl border border-purple-500/10 cursor-pointer" data-testid="card-manage-teams">
+              <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-3">
                 <Trophy className="w-6 h-6" />
               </div>
               <h3 className="font-bold text-foreground">Manage Teams</h3>

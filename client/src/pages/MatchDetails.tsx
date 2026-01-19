@@ -222,7 +222,7 @@ function ScorerDrawer({ team, players, matchId, side }: { team: any, players: an
                 key={evt.type}
                 onClick={() => evt.type === 'timeout' ? handleEvent('timeout') : null} // Timeout has no player
                 className={cn(
-                  "flex flex-col items-center justify-center gap-2 p-3 rounded-xl transition-transform active:scale-95",
+                  "flex flex-col items-center justify-center gap-2 p-3 rounded-xl",
                   evt.color,
                   evt.type === 'timeout' ? "col-span-4 h-14 flex-row" : "aspect-square"
                 )}
@@ -260,13 +260,13 @@ function ScorerDrawer({ team, players, matchId, side }: { team: any, players: an
                     <div className="flex gap-1">
                       <div 
                         onClick={(e) => { e.stopPropagation(); handleEvent('goal', player.id); }}
-                        className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white cursor-pointer active:scale-90 transition-transform"
+                        className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white cursor-pointer"
                       >
                         <Trophy className="w-5 h-5" />
                       </div>
                       <div 
                         onClick={(e) => { e.stopPropagation(); handleEvent('miss', player.id); }}
-                        className="w-10 h-10 bg-zinc-200 dark:bg-zinc-700 rounded-lg flex items-center justify-center cursor-pointer active:scale-90 transition-transform"
+                        className="w-10 h-10 bg-zinc-200 dark:bg-zinc-700 rounded-lg flex items-center justify-center cursor-pointer"
                       >
                         <XCircle className="w-5 h-5" />
                       </div>

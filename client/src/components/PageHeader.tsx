@@ -12,7 +12,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, backTo, action }: PageHeaderProps) {
   return (
-    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/40">
+    <header className="sticky top-0 z-40 bg-background border-b border-border">
       <div className="max-w-4xl mx-auto px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 overflow-hidden">

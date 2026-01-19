@@ -42,7 +42,7 @@ export default function TeamDetails() {
         >
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-black/10 pointer-events-none" />
           <div className="relative z-10 flex items-center gap-4">
-            <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-3xl font-bold border border-white/30">
+            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center text-3xl font-bold border border-white/30">
               {team.shortName}
             </div>
             <div>

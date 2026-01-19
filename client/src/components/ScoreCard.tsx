@@ -14,14 +14,13 @@ export function ScoreCard({ match, variant = "detailed" }: ScoreCardProps) {
   const isFinished = match.status === "finished";
 
   return (
-    <Link href={`/matches/${match.id}`} className="block group">
+    <Link href={`/matches/${match.id}`} className="block">
       <div className={cn(
-        "relative overflow-hidden bg-card rounded-2xl border border-border/50 shadow-sm transition-all duration-300",
-        "hover:shadow-lg hover:border-primary/20 hover:-translate-y-0.5",
-        isLive && "border-accent/40 shadow-accent/5 ring-1 ring-accent/20"
+        "relative overflow-hidden bg-card rounded-2xl border border-border/50 shadow-sm",
+        isLive && "border-accent/40 ring-1 ring-accent/20"
       )}>
         {/* Status Badge */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-muted/80 backdrop-blur rounded-b-lg px-3 py-1 border-x border-b border-border/50 z-10">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-muted rounded-b-lg px-3 py-1 border-x border-b border-border/50 z-10">
           <span className={cn(
             "text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5",
             isLive ? "text-accent animate-pulse" : "text-muted-foreground"
@@ -44,7 +43,7 @@ export function ScoreCard({ match, variant = "detailed" }: ScoreCardProps) {
             {/* Home Team */}
             <div className="flex-1 flex flex-col items-center gap-2 text-center">
               <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-md transition-transform group-hover:scale-105"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-md"
                 style={{ backgroundColor: match.homeTeam.color }}
               >
                 {match.homeTeam.shortName}
@@ -66,7 +65,7 @@ export function ScoreCard({ match, variant = "detailed" }: ScoreCardProps) {
             {/* Away Team */}
             <div className="flex-1 flex flex-col items-center gap-2 text-center">
               <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-md transition-transform group-hover:scale-105"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-md"
                 style={{ backgroundColor: match.awayTeam.color }}
               >
                 {match.awayTeam.shortName}
