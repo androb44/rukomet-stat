@@ -3,28 +3,22 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import path from "path";
+import fs from "fs";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
   
-  // Static test page - NO JavaScript at all
-  app.get('/test-static', (req, res) => {
-    res.send(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Static Test</title>
-</head>
-<body style="font-family: system-ui; padding: 20px; background: white;">
-  <h1 style="color: #333;">Static Test Page</h1>
-  <p>This page has NO JavaScript.</p>
-  <p>If you can read this, the server is working correctly.</p>
-  <p>Time: ${new Date().toISOString()}</p>
-</body>
-</html>`);
+  // Serve lightweight mobile app
+  app.get('/lite', (req, res) => {
+    const filePath = path.resolve(process.cwd(), 'public/index.html');
+    if (fs.existsSync(filePath)) {
+      res.sendFile(filePath);
+    } else {
+      res.status(404).send('Lite app not found');
+    }
   });
 
   // Teams
