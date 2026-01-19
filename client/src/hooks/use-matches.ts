@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type InsertMatch, type InsertMatchEvent } from "@shared/routes";
+import { api, buildUrl } from "@shared/routes";
+import type { InsertMatch, InsertMatchEvent } from "@shared/schema";
 
 export function useMatches() {
   return useQuery({
@@ -7,9 +8,7 @@ export function useMatches() {
     queryFn: async () => {
       const res = await fetch(api.matches.list.path);
       if (!res.ok) throw new Error("Failed to fetch matches");
-      // JSON dates come back as strings, handled by app logic or z.coerce in schema if needed
-      // Here we rely on API returning compatible types
-      return api.matches.list.responses[200].parse(await res.json());
+      return res.json();
     },
   });
 }
@@ -22,11 +21,10 @@ export function useMatch(id: number) {
       const res = await fetch(url);
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch match");
-      return api.matches.get.responses[200].parse(await res.json());
+      return res.json();
     },
     refetchInterval: (query) => {
       const data = query.state.data;
-      // Poll more frequently if match is in progress
       if (data && data.status === 'in_progress') return 3000;
       return false;
     },
@@ -43,7 +41,7 @@ export function useCreateMatch() {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error("Failed to create match");
-      return api.matches.create.responses[201].parse(await res.json());
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.matches.list.path] });
@@ -62,7 +60,7 @@ export function useUpdateMatchStatus() {
         body: JSON.stringify({ status }),
       });
       if (!res.ok) throw new Error("Failed to update status");
-      return api.matches.updateStatus.responses[200].parse(await res.json());
+      return res.json();
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [api.matches.get.path, variables.id] });
@@ -81,7 +79,7 @@ export function useCreateMatchEvent() {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error("Failed to record event");
-      return api.matchEvents.create.responses[201].parse(await res.json());
+      return res.json();
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [api.matches.get.path, variables.matchId] });
