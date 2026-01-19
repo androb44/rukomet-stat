@@ -124,7 +124,7 @@
   }
   
   .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: 0;
   }
   
   .no-scrollbar::-webkit-scrollbar {
@@ -135,15 +135,4 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-}
-
-/* Custom Animations */
-@keyframes pulse-ring {
-  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 82, 82, 0); }
-  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
-}
-
-.animate-pulse-ring {
-  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
