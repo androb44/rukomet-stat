@@ -2,723 +2,418 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <title>Handball Stats</title>
+  <title>Handball Stats v3</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+    .header { background: #1e40af; color: white; padding: 16px; }
+    .header h1 { font-size: 20px; }
+    .header small { font-size: 11px; opacity: 0.8; }
+    .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+    .card { background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .card h3 { font-size: 16px; margin-bottom: 8px; }
+    .card p { font-size: 14px; color: #666; }
+    .error-box { background: #fee2e2; border: 1px solid #f87171; color: #b91c1c; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 12px; word-break: break-all; }
+    .btn { background: #1e40af; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 14px; width: 100%; margin-top: 12px; }
+    .nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #ddd; display: flex; padding: 8px 0; }
+    .nav a { flex: 1; text-align: center; color: #666; text-decoration: none; font-size: 12px; padding: 8px; }
+    .nav a.active { color: #1e40af; }
+    .badge { display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: #1e40af; color: white; text-align: center; line-height: 36px; font-size: 12px; font-weight: bold; margin-right: 12px; }
+    .match-row { display: flex; align-items: center; justify-content: space-between; }
+    .team-col { text-align: center; flex: 1; }
+    .team-col .badge { margin: 0 auto 4px; }
+    .team-col .name { font-size: 11px; }
+    .score-col { font-size: 24px; font-weight: bold; color: #1e40af; padding: 0 12px; }
+    .hidden { display: none; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+    .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+    .back-btn { background: none; border: none; color: white; font-size: 20px; margin-right: 12px; }
+    .flex-header { display: flex; align-items: center; }
+    .status { font-size: 10px; color: #666; }
+    .live { color: #dc2626; font-weight: bold; }
+    .pb-80 { padding-bottom: 80px; }
+  </style>
+</head>
+<body class="pb-80">
+  <div id="error-display"></div>
+  
+  <div id="view-home">
+    <div class="header">
+      <h1>Handball Stats</h1>
+      <small>v3.0 Lite - <span id="load-time"></span></small>
+    </div>
+    <div class="container">
+      <div id="home-content">
+        <div class="card"><p>Loading...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-teams" class="hidden">
+    <div class="header flex-header">
+      <button class="back-btn" onclick="go('home')">&#8592;</button>
+      <h1>Teams</h1>
+    </div>
+    <div class="container">
+      <button class="btn" onclick="go('add-team')">+ Add Team</button>
+      <div id="teams-content" style="margin-top:16px">
+        <div class="card"><p>Loading...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-add-team" class="hidden">
+    <div class="header flex-header">
+      <button class="back-btn" onclick="go('teams')">&#8592;</button>
+      <h1>Add Team</h1>
+    </div>
+    <div class="container">
+      <form id="team-form" onsubmit="saveTeam(event)">
+        <div class="form-group">
+          <label>Team Name</label>
+          <input type="text" id="t-name" required placeholder="Denmark">
+        </div>
+        <div class="form-group">
+          <label>Short Name (3 letters)</label>
+          <input type="text" id="t-short" required maxlength="3" placeholder="DEN">
+        </div>
+        <div class="form-group">
+          <label>Color</label>
+          <input type="color" id="t-color" value="#1e40af">
+        </div>
+        <button type="submit" class="btn">Save Team</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="view-matches" class="hidden">
+    <div class="header flex-header">
+      <button class="back-btn" onclick="go('home')">&#8592;</button>
+      <h1>Matches</h1>
+    </div>
+    <div class="container">
+      <button class="btn" onclick="go('add-match')">+ Schedule Match</button>
+      <div id="matches-content" style="margin-top:16px">
+        <div class="card"><p>Loading...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-add-match" class="hidden">
+    <div class="header flex-header">
+      <button class="back-btn" onclick="go('matches')">&#8592;</button>
+      <h1>Schedule Match</h1>
+    </div>
+    <div class="container">
+      <form id="match-form" onsubmit="saveMatch(event)">
+        <div class="form-group">
+          <label>Home Team</label>
+          <select id="m-home" required><option value="">Select</option></select>
+        </div>
+        <div class="form-group">
+          <label>Away Team</label>
+          <select id="m-away" required><option value="">Select</option></select>
+        </div>
+        <div class="form-group">
+          <label>Date & Time</label>
+          <input type="datetime-local" id="m-date" required>
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="m-location" placeholder="Stadium">
+        </div>
+        <button type="submit" class="btn">Save Match</button>
+      </form>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a href="#" id="nav-home" class="active" onclick="go('home');return false;">Home</a>
+    <a href="#" id="nav-matches" onclick="go('matches');return false;">Matches</a>
+    <a href="#" id="nav-teams" onclick="go('teams');return false;">Teams</a>
+  </nav>
+
   <script>
-    // Clear any old service workers and caches from previous React app
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (var i = 0; i < registrations.length; i++) {
-          registrations[i].unregister();
-          console.log('Unregistered service worker');
+    var teams = [];
+    var matches = [];
+    var currentView = 'home';
+
+    // Global error handler - shows errors on screen
+    window.onerror = function(msg, url, line, col, error) {
+      showError('JS Error: ' + msg + ' at line ' + line);
+      return false;
+    };
+    window.onunhandledrejection = function(event) {
+      showError('Promise Error: ' + String(event.reason));
+    };
+
+    function showError(msg) {
+      var el = document.getElementById('error-display');
+      el.innerHTML += '<div class="error-box">' + msg + '</div>';
+    }
+
+    function log(msg) {
+      console.log('[App] ' + msg);
+    }
+
+    // Navigation
+    function go(view) {
+      try {
+        document.getElementById('view-' + currentView).classList.add('hidden');
+        document.getElementById('view-' + view).classList.remove('hidden');
+        currentView = view;
+        
+        document.querySelectorAll('.nav a').forEach(function(a) { a.classList.remove('active'); });
+        var navEl = document.getElementById('nav-' + view);
+        if (navEl) navEl.classList.add('active');
+
+        if (view === 'home') loadHome();
+        if (view === 'teams') loadTeams();
+        if (view === 'matches') loadMatches();
+        if (view === 'add-match') populateSelects();
+      } catch(e) {
+        showError('Navigation error: ' + e.message);
+      }
+    }
+
+    // Safe date formatting
+    function fmtDate(d) {
+      try {
+        if (!d) return 'TBD';
+        var dt = new Date(d);
+        if (isNaN(dt.getTime())) return 'Invalid date';
+        var month = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getMonth()];
+        var day = dt.getDate();
+        var hr = dt.getHours();
+        var min = dt.getMinutes();
+        var ampm = hr >= 12 ? 'PM' : 'AM';
+        hr = hr % 12 || 12;
+        min = min < 10 ? '0' + min : min;
+        return month + ' ' + day + ', ' + hr + ':' + min + ' ' + ampm;
+      } catch(e) {
+        return 'Date error';
+      }
+    }
+
+    // API calls with full error handling
+    function api(path) {
+      log('Fetching ' + path);
+      return fetch(path)
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .catch(function(e) {
+          showError('API ' + path + ' failed: ' + e.message);
+          return [];
+        });
+    }
+
+    function postApi(path, data) {
+      log('Posting to ' + path);
+      return fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .catch(function(e) {
+        showError('API POST ' + path + ' failed: ' + e.message);
+        return null;
+      });
+    }
+
+    // Load home data
+    function loadHome() {
+      log('Loading home');
+      Promise.all([api('/api/teams'), api('/api/matches')])
+        .then(function(results) {
+          teams = results[0] || [];
+          matches = results[1] || [];
+          renderHome();
+        })
+        .catch(function(e) {
+          showError('Load home error: ' + e.message);
+        });
+    }
+
+    function renderHome() {
+      try {
+        var html = '';
+        
+        // Quick actions
+        html += '<div class="card" onclick="go(\'matches\')" style="cursor:pointer"><h3>Matches</h3><p>View and schedule</p></div>';
+        html += '<div class="card" onclick="go(\'teams\')" style="cursor:pointer"><h3>Teams</h3><p>Manage rosters</p></div>';
+        
+        // Recent matches
+        if (matches.length > 0) {
+          html += '<h3 style="margin:20px 0 12px;font-size:14px;color:#666">RECENT MATCHES</h3>';
+          for (var i = 0; i < Math.min(3, matches.length); i++) {
+            html += renderMatchCard(matches[i]);
+          }
+        } else {
+          html += '<div class="card"><p>No matches yet</p></div>';
         }
+        
+        document.getElementById('home-content').innerHTML = html;
+        log('Home rendered');
+      } catch(e) {
+        showError('Render home error: ' + e.message);
+      }
+    }
+
+    function renderMatchCard(m) {
+      try {
+        var home = findTeam(m.homeTeamId);
+        var away = findTeam(m.awayTeamId);
+        var statusText = m.status === 'in_progress' ? 'LIVE' : (m.status === 'finished' ? 'Final' : fmtDate(m.date));
+        var statusClass = m.status === 'in_progress' ? 'live' : '';
+        
+        return '<div class="card match-row">' +
+          '<div class="team-col"><div class="badge" style="background:' + home.color + '">' + home.shortName + '</div><div class="name">' + home.name + '</div></div>' +
+          '<div class="score-col">' + (m.homeScore || 0) + ' - ' + (m.awayScore || 0) + '<div class="status ' + statusClass + '">' + statusText + '</div></div>' +
+          '<div class="team-col"><div class="badge" style="background:' + away.color + '">' + away.shortName + '</div><div class="name">' + away.name + '</div></div>' +
+        '</div>';
+      } catch(e) {
+        return '<div class="card"><p>Error rendering match</p></div>';
+      }
+    }
+
+    function findTeam(id) {
+      for (var i = 0; i < teams.length; i++) {
+        if (teams[i].id === id) return teams[i];
+      }
+      return { name: 'TBD', shortName: '?', color: '#999' };
+    }
+
+    // Teams
+    function loadTeams() {
+      log('Loading teams');
+      api('/api/teams').then(function(data) {
+        teams = data || [];
+        renderTeams();
+      });
+    }
+
+    function renderTeams() {
+      try {
+        if (teams.length === 0) {
+          document.getElementById('teams-content').innerHTML = '<div class="card"><p>No teams yet</p></div>';
+          return;
+        }
+        var html = '';
+        for (var i = 0; i < teams.length; i++) {
+          var t = teams[i];
+          html += '<div class="card" style="display:flex;align-items:center">' +
+            '<div class="badge" style="background:' + t.color + '">' + t.shortName + '</div>' +
+            '<div><strong>' + t.name + '</strong></div>' +
+          '</div>';
+        }
+        document.getElementById('teams-content').innerHTML = html;
+      } catch(e) {
+        showError('Render teams error: ' + e.message);
+      }
+    }
+
+    function saveTeam(e) {
+      e.preventDefault();
+      var data = {
+        name: document.getElementById('t-name').value,
+        shortName: document.getElementById('t-short').value.toUpperCase(),
+        color: document.getElementById('t-color').value
+      };
+      postApi('/api/teams', data).then(function(result) {
+        if (result) {
+          document.getElementById('team-form').reset();
+          go('teams');
+        }
+      });
+    }
+
+    // Matches
+    function loadMatches() {
+      log('Loading matches');
+      Promise.all([api('/api/teams'), api('/api/matches')])
+        .then(function(results) {
+          teams = results[0] || [];
+          matches = results[1] || [];
+          renderMatches();
+        });
+    }
+
+    function renderMatches() {
+      try {
+        if (matches.length === 0) {
+          document.getElementById('matches-content').innerHTML = '<div class="card"><p>No matches yet</p></div>';
+          return;
+        }
+        var html = '';
+        for (var i = 0; i < matches.length; i++) {
+          html += renderMatchCard(matches[i]);
+        }
+        document.getElementById('matches-content').innerHTML = html;
+      } catch(e) {
+        showError('Render matches error: ' + e.message);
+      }
+    }
+
+    function populateSelects() {
+      try {
+        var opts = '<option value="">Select</option>';
+        for (var i = 0; i < teams.length; i++) {
+          opts += '<option value="' + teams[i].id + '">' + teams[i].name + '</option>';
+        }
+        document.getElementById('m-home').innerHTML = opts;
+        document.getElementById('m-away').innerHTML = opts;
+      } catch(e) {
+        showError('Populate selects error: ' + e.message);
+      }
+    }
+
+    function saveMatch(e) {
+      e.preventDefault();
+      try {
+        var dateVal = document.getElementById('m-date').value;
+        var data = {
+          homeTeamId: parseInt(document.getElementById('m-home').value),
+          awayTeamId: parseInt(document.getElementById('m-away').value),
+          date: dateVal ? new Date(dateVal).toISOString() : new Date().toISOString(),
+          location: document.getElementById('m-location').value || '',
+          status: 'scheduled'
+        };
+        postApi('/api/matches', data).then(function(result) {
+          if (result) {
+            document.getElementById('match-form').reset();
+            go('matches');
+          }
+        });
+      } catch(e) {
+        showError('Save match error: ' + e.message);
+      }
+    }
+
+    // Clear old service workers
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { r.unregister(); });
       });
     }
     if ('caches' in window) {
       caches.keys().then(function(names) {
-        for (var i = 0; i < names.length; i++) {
-          caches.delete(names[i]);
-          console.log('Deleted cache:', names[i]);
-        }
+        names.forEach(function(n) { caches.delete(n); });
       });
     }
-  </script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
-      color: #333;
-      min-height: 100vh;
-      padding-bottom: 70px;
-    }
-    
-    .header {
-      background: #1e40af;
-      color: white;
-      padding: 16px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    
-    .header h1 {
-      font-size: 20px;
-      font-weight: 600;
-    }
-    
-    .header p {
-      font-size: 12px;
-      opacity: 0.8;
-      margin-top: 2px;
-    }
-    
-    .container {
-      padding: 16px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    
-    .section {
-      margin-bottom: 24px;
-    }
-    
-    .section-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #666;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .match-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    
-    .team {
-      text-align: center;
-      flex: 1;
-    }
-    
-    .team-badge {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
-      font-size: 14px;
-      margin: 0 auto 8px;
-    }
-    
-    .team-name {
-      font-size: 12px;
-      font-weight: 500;
-    }
-    
-    .score {
-      text-align: center;
-      padding: 0 16px;
-    }
-    
-    .score-display {
-      font-size: 28px;
-      font-weight: bold;
-      color: #1e40af;
-    }
-    
-    .match-status {
-      font-size: 10px;
-      color: #666;
-      margin-top: 4px;
-    }
-    
-    .match-status.live {
-      color: #dc2626;
-      font-weight: bold;
-    }
-    
-    .team-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    
-    .team-row .team-badge {
-      margin: 0;
-      width: 40px;
-      height: 40px;
-      flex-shrink: 0;
-    }
-    
-    .team-info {
-      flex: 1;
-    }
-    
-    .team-info h3 {
-      font-size: 16px;
-      font-weight: 600;
-    }
-    
-    .team-info p {
-      font-size: 12px;
-      color: #666;
-    }
-    
-    .nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      border-top: 1px solid #e5e5e5;
-      display: flex;
-      justify-content: space-around;
-      padding: 8px 0;
-      z-index: 100;
-    }
-    
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 8px 16px;
-      color: #666;
-      text-decoration: none;
-      font-size: 10px;
-      font-weight: 500;
-    }
-    
-    .nav-item.active {
-      color: #1e40af;
-    }
-    
-    .nav-item svg {
-      width: 24px;
-      height: 24px;
-      margin-bottom: 4px;
-    }
-    
-    .btn {
-      background: #1e40af;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      width: 100%;
-      cursor: pointer;
-    }
-    
-    .btn:active {
-      background: #1e3a8a;
-    }
-    
-    .quick-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    
-    .action-card {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      text-decoration: none;
-      color: inherit;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .action-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 8px;
-    }
-    
-    .action-card h3 {
-      font-size: 14px;
-      font-weight: 600;
-    }
-    
-    .action-card p {
-      font-size: 11px;
-      color: #666;
-      margin-top: 2px;
-    }
-    
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #666;
-    }
-    
-    .empty {
-      text-align: center;
-      padding: 40px;
-      color: #666;
-    }
-    
-    .page {
-      display: none;
-    }
-    
-    .page.active {
-      display: block;
-    }
-    
-    .form-group {
-      margin-bottom: 16px;
-    }
-    
-    .form-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: #666;
-      margin-bottom: 6px;
-    }
-    
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    
-    .back-btn {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 24px;
-      cursor: pointer;
-      margin-right: 12px;
-    }
-    
-    .header-row {
-      display: flex;
-      align-items: center;
-    }
-  </style>
-</head>
-<body>
-  <!-- Home Page -->
-  <div id="page-home" class="page active">
-    <div class="header">
-      <h1>Handball Stats</h1>
-      <p>Track your games - v2.0 Lite</p>
-    </div>
-    
-    <div class="container">
-      <div class="section">
-        <div class="section-title">Quick Actions</div>
-        <div class="quick-actions">
-          <a href="#" class="action-card" onclick="showPage('matches'); return false;">
-            <div class="action-icon" style="background: #dbeafe;">
-              <svg fill="none" stroke="#1e40af" viewBox="0 0 24 24" width="24" height="24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            </div>
-            <h3>Matches</h3>
-            <p>View & schedule</p>
-          </a>
-          <a href="#" class="action-card" onclick="showPage('teams'); return false;">
-            <div class="action-icon" style="background: #fce7f3;">
-              <svg fill="none" stroke="#db2777" viewBox="0 0 24 24" width="24" height="24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            <h3>Teams</h3>
-            <p>Manage rosters</p>
-          </a>
-        </div>
-      </div>
-      
-      <div class="section">
-        <div class="section-title">Upcoming Matches</div>
-        <div id="home-matches">
-          <div class="loading">Loading...</div>
-        </div>
-      </div>
-      
-      <div class="section">
-        <div class="section-title">Teams</div>
-        <div id="home-teams">
-          <div class="loading">Loading...</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Teams Page -->
-  <div id="page-teams" class="page">
-    <div class="header">
-      <div class="header-row">
-        <button class="back-btn" onclick="showPage('home')">&larr;</button>
-        <div>
-          <h1>Teams</h1>
-          <p>Manage your teams</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="container">
-      <div class="section">
-        <button class="btn" onclick="showPage('add-team')">+ Add Team</button>
-      </div>
-      
-      <div class="section">
-        <div id="teams-list">
-          <div class="loading">Loading...</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Add Team Page -->
-  <div id="page-add-team" class="page">
-    <div class="header">
-      <div class="header-row">
-        <button class="back-btn" onclick="showPage('teams')">&larr;</button>
-        <div>
-          <h1>Add Team</h1>
-        </div>
-      </div>
-    </div>
-    
-    <div class="container">
-      <form id="add-team-form" onsubmit="createTeam(event)">
-        <div class="form-group">
-          <label>Team Name</label>
-          <input type="text" id="team-name" placeholder="e.g. Denmark" required>
-        </div>
-        <div class="form-group">
-          <label>Short Name (3 letters)</label>
-          <input type="text" id="team-short" placeholder="e.g. DEN" maxlength="3" required style="text-transform: uppercase;">
-        </div>
-        <div class="form-group">
-          <label>Team Color</label>
-          <input type="color" id="team-color" value="#1e40af">
-        </div>
-        <button type="submit" class="btn">Create Team</button>
-      </form>
-    </div>
-  </div>
-  
-  <!-- Matches Page -->
-  <div id="page-matches" class="page">
-    <div class="header">
-      <div class="header-row">
-        <button class="back-btn" onclick="showPage('home')">&larr;</button>
-        <div>
-          <h1>Matches</h1>
-          <p>Schedule & results</p>
-        </div>
-      </div>
-    </div>
-    
-    <div class="container">
-      <div class="section">
-        <button class="btn" onclick="showPage('add-match')">+ Schedule Match</button>
-      </div>
-      
-      <div class="section">
-        <div id="matches-list">
-          <div class="loading">Loading...</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Add Match Page -->
-  <div id="page-add-match" class="page">
-    <div class="header">
-      <div class="header-row">
-        <button class="back-btn" onclick="showPage('matches')">&larr;</button>
-        <div>
-          <h1>Schedule Match</h1>
-        </div>
-      </div>
-    </div>
-    
-    <div class="container">
-      <form id="add-match-form" onsubmit="createMatch(event)">
-        <div class="form-group">
-          <label>Home Team</label>
-          <select id="match-home" required>
-            <option value="">Select team</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Away Team</label>
-          <select id="match-away" required>
-            <option value="">Select team</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Date & Time</label>
-          <input type="datetime-local" id="match-date" required>
-        </div>
-        <div class="form-group">
-          <label>Location</label>
-          <input type="text" id="match-location" placeholder="Stadium name">
-        </div>
-        <button type="submit" class="btn">Create Match</button>
-      </form>
-    </div>
-  </div>
 
-  <!-- Bottom Navigation -->
-  <nav class="nav">
-    <a href="#" class="nav-item active" id="nav-home" onclick="showPage('home'); return false;">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-      Home
-    </a>
-    <a href="#" class="nav-item" id="nav-matches" onclick="showPage('matches'); return false;">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      Matches
-    </a>
-    <a href="#" class="nav-item" id="nav-teams" onclick="showPage('teams'); return false;">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Teams
-    </a>
-  </nav>
-
-  <script>
-    let teamsData = [];
-    let matchesData = [];
-    
-    function showPage(page) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById('page-' + page).classList.add('active');
-      
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      const navItem = document.getElementById('nav-' + page);
-      if (navItem) navItem.classList.add('active');
-      
-      if (page === 'home') loadHomeData();
-      if (page === 'teams') loadTeams();
-      if (page === 'matches') loadMatches();
-      if (page === 'add-match') populateTeamSelects();
-    }
-    
-    async function loadHomeData() {
-      try {
-        const [teamsRes, matchesRes] = await Promise.all([
-          fetch('/api/teams'),
-          fetch('/api/matches')
-        ]);
-        teamsData = await teamsRes.json();
-        matchesData = await matchesRes.json();
-        
-        renderHomeMatches();
-        renderHomeTeams();
-      } catch (e) {
-        console.error('Load error:', e);
-      }
-    }
-    
-    function renderHomeMatches() {
-      const container = document.getElementById('home-matches');
-      if (matchesData.length === 0) {
-        container.innerHTML = '<div class="empty">No matches scheduled</div>';
-        return;
-      }
-      
-      const html = matchesData.slice(0, 3).map(match => {
-        const home = teamsData.find(t => t.id === match.homeTeamId) || { name: 'TBD', shortName: '?', color: '#999' };
-        const away = teamsData.find(t => t.id === match.awayTeamId) || { name: 'TBD', shortName: '?', color: '#999' };
-        const statusText = match.status === 'in_progress' ? 'LIVE' : (match.status === 'finished' ? 'Final' : formatDate(match.date));
-        const statusClass = match.status === 'in_progress' ? 'live' : '';
-        
-        return '<div class="card match-card">' +
-          '<div class="team">' +
-            '<div class="team-badge" style="background:' + home.color + '">' + home.shortName + '</div>' +
-            '<div class="team-name">' + home.name + '</div>' +
-          '</div>' +
-          '<div class="score">' +
-            '<div class="score-display">' + (match.homeScore || 0) + ' - ' + (match.awayScore || 0) + '</div>' +
-            '<div class="match-status ' + statusClass + '">' + statusText + '</div>' +
-          '</div>' +
-          '<div class="team">' +
-            '<div class="team-badge" style="background:' + away.color + '">' + away.shortName + '</div>' +
-            '<div class="team-name">' + away.name + '</div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-      
-      container.innerHTML = html;
-    }
-    
-    function renderHomeTeams() {
-      const container = document.getElementById('home-teams');
-      if (teamsData.length === 0) {
-        container.innerHTML = '<div class="empty">No teams yet</div>';
-        return;
-      }
-      
-      const html = teamsData.slice(0, 3).map(team => 
-        '<div class="card team-row">' +
-          '<div class="team-badge" style="background:' + team.color + '">' + team.shortName + '</div>' +
-          '<div class="team-info">' +
-            '<h3>' + team.name + '</h3>' +
-            '<p>View details</p>' +
-          '</div>' +
-        '</div>'
-      ).join('');
-      
-      container.innerHTML = html;
-    }
-    
-    async function loadTeams() {
-      try {
-        const res = await fetch('/api/teams');
-        teamsData = await res.json();
-        
-        const container = document.getElementById('teams-list');
-        if (teamsData.length === 0) {
-          container.innerHTML = '<div class="empty">No teams yet. Create your first team!</div>';
-          return;
-        }
-        
-        const html = teamsData.map(team => 
-          '<div class="card team-row">' +
-            '<div class="team-badge" style="background:' + team.color + '">' + team.shortName + '</div>' +
-            '<div class="team-info">' +
-              '<h3>' + team.name + '</h3>' +
-              '<p>Tap to manage players</p>' +
-            '</div>' +
-          '</div>'
-        ).join('');
-        
-        container.innerHTML = html;
-      } catch (e) {
-        console.error('Load teams error:', e);
-      }
-    }
-    
-    async function loadMatches() {
-      try {
-        const [teamsRes, matchesRes] = await Promise.all([
-          fetch('/api/teams'),
-          fetch('/api/matches')
-        ]);
-        teamsData = await teamsRes.json();
-        matchesData = await matchesRes.json();
-        
-        const container = document.getElementById('matches-list');
-        if (matchesData.length === 0) {
-          container.innerHTML = '<div class="empty">No matches scheduled yet.</div>';
-          return;
-        }
-        
-        const html = matchesData.map(match => {
-          const home = teamsData.find(t => t.id === match.homeTeamId) || { name: 'TBD', shortName: '?', color: '#999' };
-          const away = teamsData.find(t => t.id === match.awayTeamId) || { name: 'TBD', shortName: '?', color: '#999' };
-          const statusText = match.status === 'in_progress' ? 'LIVE' : (match.status === 'finished' ? 'Final' : formatDate(match.date));
-          const statusClass = match.status === 'in_progress' ? 'live' : '';
-          
-          return '<div class="card match-card">' +
-            '<div class="team">' +
-              '<div class="team-badge" style="background:' + home.color + '">' + home.shortName + '</div>' +
-              '<div class="team-name">' + home.name + '</div>' +
-            '</div>' +
-            '<div class="score">' +
-              '<div class="score-display">' + (match.homeScore || 0) + ' - ' + (match.awayScore || 0) + '</div>' +
-              '<div class="match-status ' + statusClass + '">' + statusText + '</div>' +
-            '</div>' +
-            '<div class="team">' +
-              '<div class="team-badge" style="background:' + away.color + '">' + away.shortName + '</div>' +
-              '<div class="team-name">' + away.name + '</div>' +
-            '</div>' +
-          '</div>';
-        }).join('');
-        
-        container.innerHTML = html;
-      } catch (e) {
-        console.error('Load matches error:', e);
-      }
-    }
-    
-    function populateTeamSelects() {
-      const homeSelect = document.getElementById('match-home');
-      const awaySelect = document.getElementById('match-away');
-      
-      const options = '<option value="">Select team</option>' + 
-        teamsData.map(t => '<option value="' + t.id + '">' + t.name + '</option>').join('');
-      
-      homeSelect.innerHTML = options;
-      awaySelect.innerHTML = options;
-    }
-    
-    async function createTeam(e) {
-      e.preventDefault();
-      
-      const data = {
-        name: document.getElementById('team-name').value,
-        shortName: document.getElementById('team-short').value.toUpperCase(),
-        color: document.getElementById('team-color').value
-      };
-      
-      try {
-        const res = await fetch('/api/teams', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        if (res.ok) {
-          document.getElementById('add-team-form').reset();
-          showPage('teams');
-        } else {
-          alert('Failed to create team');
-        }
-      } catch (e) {
-        console.error('Create team error:', e);
-        alert('Failed to create team');
-      }
-    }
-    
-    async function createMatch(e) {
-      e.preventDefault();
-      
-      const data = {
-        homeTeamId: parseInt(document.getElementById('match-home').value),
-        awayTeamId: parseInt(document.getElementById('match-away').value),
-        date: new Date(document.getElementById('match-date').value).toISOString(),
-        location: document.getElementById('match-location').value,
-        status: 'scheduled'
-      };
-      
-      try {
-        const res = await fetch('/api/matches', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        if (res.ok) {
-          document.getElementById('add-match-form').reset();
-          showPage('matches');
-        } else {
-          alert('Failed to create match');
-        }
-      } catch (e) {
-        console.error('Create match error:', e);
-        alert('Failed to create match');
-      }
-    }
-    
-    function formatDate(dateStr) {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + 
-             ' ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    }
-    
-    // Load initial data
-    loadHomeData();
+    // Show load time and start
+    document.getElementById('load-time').textContent = new Date().toLocaleTimeString();
+    log('Starting app');
+    loadHome();
   </script>
 </body>
 </html>
