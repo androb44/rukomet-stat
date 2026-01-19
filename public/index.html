@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <title>Handball Stats v3</title>
+  <title>Handball Stats v4</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
@@ -17,11 +17,16 @@
     .card p { font-size: 14px; color: #666; }
     .error-box { background: #fee2e2; border: 1px solid #f87171; color: #b91c1c; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 12px; word-break: break-all; }
     .btn { background: #1e40af; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 14px; width: 100%; margin-top: 12px; }
-    .nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #ddd; display: flex; padding: 8px 0; }
+    .btn-sm { padding: 8px 12px; font-size: 12px; margin: 4px; width: auto; }
+    .btn-success { background: #16a34a; }
+    .btn-danger { background: #dc2626; }
+    .btn-warning { background: #ca8a04; }
+    .btn-secondary { background: #6b7280; }
+    .nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #ddd; display: flex; padding: 8px 0; z-index: 100; }
     .nav a { flex: 1; text-align: center; color: #666; text-decoration: none; font-size: 12px; padding: 8px; }
     .nav a.active { color: #1e40af; }
     .badge { display: inline-block; width: 36px; height: 36px; border-radius: 50%; background: #1e40af; color: white; text-align: center; line-height: 36px; font-size: 12px; font-weight: bold; margin-right: 12px; }
-    .match-row { display: flex; align-items: center; justify-content: space-between; }
+    .match-row { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
     .team-col { text-align: center; flex: 1; }
     .team-col .badge { margin: 0 auto 4px; }
     .team-col .name { font-size: 11px; }
@@ -35,6 +40,36 @@
     .status { font-size: 10px; color: #666; }
     .live { color: #dc2626; font-weight: bold; }
     .pb-80 { padding-bottom: 80px; }
+    .big-score { font-size: 48px; font-weight: bold; text-align: center; padding: 20px 0; color: #1e40af; }
+    .timer { text-align: center; font-size: 32px; font-weight: bold; color: #333; margin: 10px 0; }
+    .timer-controls { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
+    .team-section { background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .team-header { display: flex; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee; }
+    .team-header .badge { width: 32px; height: 32px; line-height: 32px; font-size: 11px; }
+    .team-header h3 { font-size: 16px; flex: 1; }
+    .team-header .score { font-size: 24px; font-weight: bold; }
+    .stat-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+    .stat-btn { padding: 10px 14px; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; color: white; cursor: pointer; }
+    .stat-btn.goal { background: #16a34a; }
+    .stat-btn.shot { background: #3b82f6; }
+    .stat-btn.save { background: #8b5cf6; }
+    .stat-btn.assist { background: #06b6d4; }
+    .stat-btn.turnover { background: #f59e0b; }
+    .stat-btn.block { background: #64748b; }
+    .stat-btn.yellow { background: #eab308; color: #333; }
+    .stat-btn.twomin { background: #f97316; }
+    .stat-btn.red { background: #dc2626; }
+    .event-log { max-height: 200px; overflow-y: auto; }
+    .event-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
+    .event-time { width: 50px; color: #666; font-weight: 500; }
+    .event-team { width: 40px; }
+    .event-team .badge { width: 24px; height: 24px; line-height: 24px; font-size: 9px; margin: 0; }
+    .event-type { flex: 1; font-weight: 500; }
+    .event-delete { background: none; border: none; color: #999; font-size: 16px; padding: 4px 8px; cursor: pointer; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .stat-box { background: #f8fafc; padding: 8px; border-radius: 6px; text-align: center; }
+    .stat-box .value { font-size: 20px; font-weight: bold; color: #1e40af; }
+    .stat-box .label { font-size: 10px; color: #666; }
   </style>
 </head>
 <body class="pb-80">
@@ -43,7 +78,7 @@
   <div id="view-home">
     <div class="header">
       <h1>Handball Stats</h1>
-      <small>v3.0 Lite - <span id="load-time"></span></small>
+      <small>v4.0 Live Stats - <span id="load-time"></span></small>
     </div>
     <div class="container">
       <div id="home-content">
@@ -130,6 +165,42 @@
     </div>
   </div>
 
+  <div id="view-match" class="hidden">
+    <div class="header flex-header">
+      <button class="back-btn" onclick="go('matches')">&#8592;</button>
+      <h1 id="match-title">Match Details</h1>
+    </div>
+    <div class="container" style="padding-bottom: 100px;">
+      <div class="big-score" id="match-score">0 - 0</div>
+      <div class="timer" id="match-timer">00:00</div>
+      <div class="timer-controls">
+        <button class="btn btn-sm btn-success" id="btn-start" onclick="startTimer()">Start</button>
+        <button class="btn btn-sm btn-warning" id="btn-pause" onclick="pauseTimer()">Pause</button>
+        <button class="btn btn-sm btn-secondary" onclick="resetTimer()">Reset</button>
+      </div>
+      
+      <div id="match-status-bar" style="text-align:center;margin-bottom:16px;">
+        <button class="btn btn-sm btn-success" onclick="setMatchStatus('in_progress')">Start Match</button>
+        <button class="btn btn-sm btn-danger" onclick="setMatchStatus('finished')">End Match</button>
+      </div>
+      
+      <div class="team-section" id="home-team-section"></div>
+      <div class="team-section" id="away-team-section"></div>
+      
+      <div class="card">
+        <h3>Event Log</h3>
+        <div class="event-log" id="event-log">
+          <p style="color:#666;font-size:12px;">No events yet</p>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h3>Stats Summary</h3>
+        <div id="stats-summary"></div>
+      </div>
+    </div>
+  </div>
+
   <nav class="nav">
     <a href="#" id="nav-home" class="active" onclick="go('home');return false;">Home</a>
     <a href="#" id="nav-matches" onclick="go('matches');return false;">Matches</a>
@@ -140,6 +211,11 @@
     var teams = [];
     var matches = [];
     var currentView = 'home';
+    var currentMatch = null;
+    var matchEvents = [];
+    var timerSeconds = 0;
+    var timerInterval = null;
+    var timerRunning = false;
 
     // Global error handler - shows errors on screen
     window.onerror = function(msg, url, line, col, error) {
@@ -177,6 +253,20 @@
       } catch(e) {
         showError('Navigation error: ' + e.message);
       }
+    }
+
+    function openMatch(matchId) {
+      log('Opening match ' + matchId);
+      api('/api/matches/' + matchId).then(function(data) {
+        if (data && data.id) {
+          currentMatch = data;
+          matchEvents = data.events || [];
+          renderMatchDetails();
+          document.getElementById('view-' + currentView).classList.add('hidden');
+          document.getElementById('view-match').classList.remove('hidden');
+          currentView = 'match';
+        }
+      });
     }
 
     // Safe date formatting
@@ -275,7 +365,7 @@
         var statusText = m.status === 'in_progress' ? 'LIVE' : (m.status === 'finished' ? 'Final' : fmtDate(m.date));
         var statusClass = m.status === 'in_progress' ? 'live' : '';
         
-        return '<div class="card match-row">' +
+        return '<div class="card match-row" onclick="openMatch(' + m.id + ')">' +
           '<div class="team-col"><div class="badge" style="background:' + home.color + '">' + home.shortName + '</div><div class="name">' + home.name + '</div></div>' +
           '<div class="score-col">' + (m.homeScore || 0) + ' - ' + (m.awayScore || 0) + '<div class="status ' + statusClass + '">' + statusText + '</div></div>' +
           '<div class="team-col"><div class="badge" style="background:' + away.color + '">' + away.shortName + '</div><div class="name">' + away.name + '</div></div>' +
@@ -396,6 +486,218 @@
       } catch(e) {
         showError('Save match error: ' + e.message);
       }
+    }
+
+    // ===== MATCH DETAILS =====
+    function renderMatchDetails() {
+      try {
+        if (!currentMatch) return;
+        
+        var home = currentMatch.homeTeam || findTeam(currentMatch.homeTeamId);
+        var away = currentMatch.awayTeam || findTeam(currentMatch.awayTeamId);
+        
+        document.getElementById('match-title').textContent = home.shortName + ' vs ' + away.shortName;
+        document.getElementById('match-score').textContent = (currentMatch.homeScore || 0) + ' - ' + (currentMatch.awayScore || 0);
+        
+        // Home team section
+        document.getElementById('home-team-section').innerHTML = renderTeamButtons(home, currentMatch.homeScore || 0, true);
+        
+        // Away team section
+        document.getElementById('away-team-section').innerHTML = renderTeamButtons(away, currentMatch.awayScore || 0, false);
+        
+        renderEventLog();
+        renderStatsSummary();
+      } catch(e) {
+        showError('Render match error: ' + e.message);
+      }
+    }
+
+    function renderTeamButtons(team, score, isHome) {
+      var teamId = team.id;
+      return '<div class="team-header">' +
+        '<div class="badge" style="background:' + team.color + '">' + team.shortName + '</div>' +
+        '<h3>' + team.name + '</h3>' +
+        '<span class="score">' + score + '</span>' +
+      '</div>' +
+      '<div class="stat-btns">' +
+        '<button class="stat-btn goal" onclick="recordEvent(' + teamId + ',\'goal\')">Goal</button>' +
+        '<button class="stat-btn shot" onclick="recordEvent(' + teamId + ',\'shot\')">Shot</button>' +
+        '<button class="stat-btn save" onclick="recordEvent(' + teamId + ',\'save\')">Save</button>' +
+        '<button class="stat-btn assist" onclick="recordEvent(' + teamId + ',\'assist\')">Assist</button>' +
+        '<button class="stat-btn turnover" onclick="recordEvent(' + teamId + ',\'turnover\')">Turnover</button>' +
+        '<button class="stat-btn block" onclick="recordEvent(' + teamId + ',\'block\')">Block</button>' +
+        '<button class="stat-btn yellow" onclick="recordEvent(' + teamId + ',\'yellow_card\')">Yellow</button>' +
+        '<button class="stat-btn twomin" onclick="recordEvent(' + teamId + ',\'2min\')">2min</button>' +
+        '<button class="stat-btn red" onclick="recordEvent(' + teamId + ',\'red_card\')">Red</button>' +
+      '</div>';
+    }
+
+    function recordEvent(teamId, eventType) {
+      log('Recording ' + eventType + ' for team ' + teamId);
+      var data = {
+        matchId: currentMatch.id,
+        teamId: teamId,
+        type: eventType,
+        time: timerSeconds
+      };
+      
+      postApi('/api/match-events', data).then(function(result) {
+        if (result) {
+          matchEvents.unshift(result);
+          // Reload match to get updated score
+          api('/api/matches/' + currentMatch.id).then(function(data) {
+            if (data && data.id) {
+              currentMatch = data;
+              matchEvents = data.events || [];
+              renderMatchDetails();
+            }
+          });
+        }
+      });
+    }
+
+    function deleteEvent(eventId) {
+      fetch('/api/match-events/' + eventId, { method: 'DELETE' })
+        .then(function() {
+          // Reload match
+          api('/api/matches/' + currentMatch.id).then(function(data) {
+            if (data && data.id) {
+              currentMatch = data;
+              matchEvents = data.events || [];
+              renderMatchDetails();
+            }
+          });
+        });
+    }
+
+    function renderEventLog() {
+      var el = document.getElementById('event-log');
+      if (matchEvents.length === 0) {
+        el.innerHTML = '<p style="color:#666;font-size:12px;">No events yet</p>';
+        return;
+      }
+      
+      var html = '';
+      for (var i = 0; i < matchEvents.length; i++) {
+        var evt = matchEvents[i];
+        var team = findTeam(evt.teamId);
+        var mins = Math.floor(evt.time / 60);
+        var secs = evt.time % 60;
+        var timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
+        var typeLabel = getEventLabel(evt.type);
+        
+        html += '<div class="event-item">' +
+          '<span class="event-time">' + timeStr + '</span>' +
+          '<span class="event-team"><div class="badge" style="background:' + team.color + '">' + team.shortName + '</div></span>' +
+          '<span class="event-type">' + typeLabel + '</span>' +
+          '<button class="event-delete" onclick="deleteEvent(' + evt.id + ')">x</button>' +
+        '</div>';
+      }
+      el.innerHTML = html;
+    }
+
+    function getEventLabel(type) {
+      var labels = {
+        'goal': 'Goal',
+        'shot': 'Shot',
+        'save': 'Save',
+        'assist': 'Assist',
+        'turnover': 'Turnover',
+        'block': 'Block',
+        'yellow_card': 'Yellow Card',
+        '2min': '2 Min Suspension',
+        'red_card': 'Red Card',
+        'miss': 'Miss'
+      };
+      return labels[type] || type;
+    }
+
+    function renderStatsSummary() {
+      var home = currentMatch.homeTeam || findTeam(currentMatch.homeTeamId);
+      var away = currentMatch.awayTeam || findTeam(currentMatch.awayTeamId);
+      
+      var homeStats = { goals: 0, shots: 0, saves: 0, assists: 0, turnovers: 0, blocks: 0 };
+      var awayStats = { goals: 0, shots: 0, saves: 0, assists: 0, turnovers: 0, blocks: 0 };
+      
+      for (var i = 0; i < matchEvents.length; i++) {
+        var evt = matchEvents[i];
+        var stats = evt.teamId === home.id ? homeStats : awayStats;
+        if (evt.type === 'goal') stats.goals++;
+        if (evt.type === 'shot') stats.shots++;
+        if (evt.type === 'save') stats.saves++;
+        if (evt.type === 'assist') stats.assists++;
+        if (evt.type === 'turnover') stats.turnovers++;
+        if (evt.type === 'block') stats.blocks++;
+      }
+      
+      var html = '<div style="display:flex;margin-bottom:8px;">' +
+        '<div style="flex:1;text-align:center;font-weight:bold;">' + home.shortName + '</div>' +
+        '<div style="flex:1;text-align:center;font-weight:bold;">Stat</div>' +
+        '<div style="flex:1;text-align:center;font-weight:bold;">' + away.shortName + '</div>' +
+      '</div>';
+      
+      var statTypes = ['goals', 'shots', 'saves', 'assists', 'turnovers', 'blocks'];
+      var statLabels = ['Goals', 'Shots', 'Saves', 'Assists', 'Turnovers', 'Blocks'];
+      
+      for (var i = 0; i < statTypes.length; i++) {
+        var key = statTypes[i];
+        html += '<div style="display:flex;padding:4px 0;border-top:1px solid #eee;">' +
+          '<div style="flex:1;text-align:center;">' + homeStats[key] + '</div>' +
+          '<div style="flex:1;text-align:center;font-size:12px;color:#666;">' + statLabels[i] + '</div>' +
+          '<div style="flex:1;text-align:center;">' + awayStats[key] + '</div>' +
+        '</div>';
+      }
+      
+      document.getElementById('stats-summary').innerHTML = html;
+    }
+
+    // Timer functions
+    function startTimer() {
+      if (!timerRunning) {
+        timerRunning = true;
+        timerInterval = setInterval(function() {
+          timerSeconds++;
+          updateTimerDisplay();
+        }, 1000);
+      }
+    }
+
+    function pauseTimer() {
+      timerRunning = false;
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      timerSeconds = 0;
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      var mins = Math.floor(timerSeconds / 60);
+      var secs = timerSeconds % 60;
+      document.getElementById('match-timer').textContent = 
+        (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+    }
+
+    function setMatchStatus(status) {
+      fetch('/api/matches/' + currentMatch.id + '/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status })
+      }).then(function(res) {
+        return res.json();
+      }).then(function(data) {
+        currentMatch.status = status;
+        if (status === 'in_progress') {
+          startTimer();
+        } else if (status === 'finished') {
+          pauseTimer();
+        }
+      });
     }
 
     // Clear old service workers
