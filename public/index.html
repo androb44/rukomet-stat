@@ -70,6 +70,21 @@
     .stat-box { background: #f8fafc; padding: 8px; border-radius: 6px; text-align: center; }
     .stat-box .value { font-size: 20px; font-weight: bold; color: #1e40af; }
     .stat-box .label { font-size: 10px; color: #666; }
+    .player-card { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+    .player-number { width: 36px; height: 36px; border-radius: 50%; background: #1e40af; color: white; text-align: center; line-height: 36px; font-size: 14px; font-weight: bold; margin-right: 12px; }
+    .player-info { flex: 1; }
+    .player-info .name { font-weight: 600; }
+    .player-info .position { font-size: 12px; color: #666; }
+    .player-delete { background: none; border: none; color: #999; font-size: 16px; padding: 4px 8px; cursor: pointer; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; }
+    .modal { background: white; border-radius: 12px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
+    .modal-header { padding: 16px; border-bottom: 1px solid #eee; font-weight: bold; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .modal-close { background: none; border: none; font-size: 24px; color: #666; cursor: pointer; }
+    .modal-body { padding: 16px; }
+    .player-select-btn { display: flex; align-items: center; width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px; background: white; cursor: pointer; text-align: left; }
+    .player-select-btn:active { background: #f5f5f5; }
+    .player-select-btn .player-number { width: 32px; height: 32px; line-height: 32px; font-size: 12px; }
+    .event-player { font-size: 11px; color: #1e40af; font-weight: 500; }
   </style>
 </head>
 <body class="pb-80">
@@ -165,6 +180,51 @@
     </div>
   </div>
 
+  <div id="view-team" class="hidden">
+    <div class="header flex-header">
+      <button class="back-btn" onclick="go('teams')">&#8592;</button>
+      <h1 id="team-title">Team Details</h1>
+    </div>
+    <div class="container">
+      <div id="team-info"></div>
+      <h3 style="margin:20px 0 12px;font-size:14px;color:#666">ROSTER</h3>
+      <div id="players-list">
+        <div class="card"><p>Loading...</p></div>
+      </div>
+      <button class="btn" onclick="showAddPlayer()">+ Add Player</button>
+      <div id="add-player-form" class="hidden" style="margin-top:16px;">
+        <div class="card">
+          <h3>Add Player</h3>
+          <form onsubmit="savePlayer(event)">
+            <div class="form-group">
+              <label>Player Name</label>
+              <input type="text" id="p-name" required placeholder="John Smith">
+            </div>
+            <div class="form-group">
+              <label>Jersey Number</label>
+              <input type="number" id="p-number" required min="1" max="99" placeholder="7">
+            </div>
+            <div class="form-group">
+              <label>Position</label>
+              <select id="p-position" required>
+                <option value="">Select position</option>
+                <option value="GK">Goalkeeper (GK)</option>
+                <option value="LW">Left Wing (LW)</option>
+                <option value="LB">Left Back (LB)</option>
+                <option value="CB">Center Back (CB)</option>
+                <option value="RB">Right Back (RB)</option>
+                <option value="RW">Right Wing (RW)</option>
+                <option value="P">Pivot (P)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn">Save Player</button>
+            <button type="button" class="btn btn-secondary" onclick="hideAddPlayer()">Cancel</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="view-match" class="hidden">
     <div class="header flex-header">
       <button class="back-btn" onclick="go('matches')">&#8592;</button>
@@ -201,6 +261,20 @@
     </div>
   </div>
 
+  <div id="player-modal" class="hidden">
+    <div class="modal-overlay" onclick="closePlayerModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <span id="modal-title">Select Player</span>
+          <button class="modal-close" onclick="closePlayerModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-players">
+          <p>Loading players...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <nav class="nav">
     <a href="#" id="nav-home" class="active" onclick="go('home');return false;">Home</a>
     <a href="#" id="nav-matches" onclick="go('matches');return false;">Matches</a>
@@ -212,10 +286,15 @@
     var matches = [];
     var currentView = 'home';
     var currentMatch = null;
+    var currentTeam = null;
+    var teamPlayers = [];
+    var homePlayers = [];
+    var awayPlayers = [];
     var matchEvents = [];
     var timerSeconds = 0;
     var timerInterval = null;
     var timerRunning = false;
+    var pendingEvent = null; // { teamId, eventType }
 
     // Global error handler - shows errors on screen
     window.onerror = function(msg, url, line, col, error) {
@@ -261,12 +340,107 @@
         if (data && data.id) {
           currentMatch = data;
           matchEvents = data.events || [];
-          renderMatchDetails();
+          // Reset timer when opening new match
+          pauseTimer();
+          timerSeconds = 0;
+          updateTimerDisplay();
+          // Load players for both teams
+          Promise.all([
+            api('/api/players?teamId=' + data.homeTeamId),
+            api('/api/players?teamId=' + data.awayTeamId)
+          ]).then(function(results) {
+            homePlayers = results[0] || [];
+            awayPlayers = results[1] || [];
+            renderMatchDetails();
+          });
           document.getElementById('view-' + currentView).classList.add('hidden');
           document.getElementById('view-match').classList.remove('hidden');
           currentView = 'match';
         }
       });
+    }
+
+    function openTeam(teamId) {
+      log('Opening team ' + teamId);
+      currentTeam = findTeam(teamId);
+      if (!currentTeam || !currentTeam.id) {
+        showError('Team not found');
+        return;
+      }
+      document.getElementById('team-title').textContent = currentTeam.name;
+      document.getElementById('team-info').innerHTML = 
+        '<div class="card" style="display:flex;align-items:center">' +
+        '<div class="badge" style="background:' + currentTeam.color + '">' + currentTeam.shortName + '</div>' +
+        '<div><strong>' + currentTeam.name + '</strong></div>' +
+        '</div>';
+      
+      loadTeamPlayers();
+      document.getElementById('view-' + currentView).classList.add('hidden');
+      document.getElementById('view-team').classList.remove('hidden');
+      currentView = 'team';
+    }
+
+    function loadTeamPlayers() {
+      api('/api/players?teamId=' + currentTeam.id).then(function(data) {
+        teamPlayers = data || [];
+        renderTeamPlayers();
+      });
+    }
+
+    function renderTeamPlayers() {
+      var el = document.getElementById('players-list');
+      if (teamPlayers.length === 0) {
+        el.innerHTML = '<div class="card"><p>No players yet. Add some players to the roster!</p></div>';
+        return;
+      }
+      var html = '<div class="card">';
+      for (var i = 0; i < teamPlayers.length; i++) {
+        var p = teamPlayers[i];
+        html += '<div class="player-card">' +
+          '<div class="player-number" style="background:' + currentTeam.color + '">' + p.number + '</div>' +
+          '<div class="player-info">' +
+            '<div class="name">' + p.name + '</div>' +
+            '<div class="position">' + p.position + '</div>' +
+          '</div>' +
+          '<button class="player-delete" onclick="deletePlayer(' + p.id + ')" data-testid="button-delete-player-' + p.id + '">x</button>' +
+        '</div>';
+      }
+      html += '</div>';
+      el.innerHTML = html;
+    }
+
+    function showAddPlayer() {
+      document.getElementById('add-player-form').classList.remove('hidden');
+    }
+
+    function hideAddPlayer() {
+      document.getElementById('add-player-form').classList.add('hidden');
+    }
+
+    function savePlayer(e) {
+      e.preventDefault();
+      var data = {
+        teamId: currentTeam.id,
+        name: document.getElementById('p-name').value,
+        number: parseInt(document.getElementById('p-number').value),
+        position: document.getElementById('p-position').value
+      };
+      postApi('/api/players', data).then(function(result) {
+        if (result) {
+          document.getElementById('p-name').value = '';
+          document.getElementById('p-number').value = '';
+          document.getElementById('p-position').value = '';
+          hideAddPlayer();
+          loadTeamPlayers();
+        }
+      });
+    }
+
+    function deletePlayer(playerId) {
+      fetch('/api/players/' + playerId, { method: 'DELETE' })
+        .then(function() {
+          loadTeamPlayers();
+        });
     }
 
     // Safe date formatting
@@ -400,9 +574,10 @@
         var html = '';
         for (var i = 0; i < teams.length; i++) {
           var t = teams[i];
-          html += '<div class="card" style="display:flex;align-items:center">' +
+          html += '<div class="card" style="display:flex;align-items:center;cursor:pointer" onclick="openTeam(' + t.id + ')" data-testid="card-team-' + t.id + '">' +
             '<div class="badge" style="background:' + t.color + '">' + t.shortName + '</div>' +
-            '<div><strong>' + t.name + '</strong></div>' +
+            '<div style="flex:1"><strong>' + t.name + '</strong><div style="font-size:11px;color:#666">Tap to manage roster</div></div>' +
+            '<span style="color:#999;font-size:18px">&#8250;</span>' +
           '</div>';
         }
         document.getElementById('teams-content').innerHTML = html;
@@ -534,12 +709,69 @@
 
     function recordEvent(teamId, eventType) {
       log('Recording ' + eventType + ' for team ' + teamId);
+      // Get players for this team
+      var players = teamId === currentMatch.homeTeamId ? homePlayers : awayPlayers;
+      
+      if (players.length === 0) {
+        // No players, record without player attribution
+        submitEvent(teamId, eventType, null);
+      } else {
+        // Show player selection modal
+        pendingEvent = { teamId: teamId, eventType: eventType };
+        showPlayerModal(teamId, eventType, players);
+      }
+    }
+
+    function showPlayerModal(teamId, eventType, players) {
+      var team = findTeam(teamId);
+      document.getElementById('modal-title').textContent = 'Select Player - ' + getEventLabel(eventType);
+      
+      var html = '';
+      for (var i = 0; i < players.length; i++) {
+        var p = players[i];
+        html += '<button class="player-select-btn" onclick="selectPlayer(' + p.id + ')" data-testid="button-select-player-' + p.id + '">' +
+          '<div class="player-number" style="background:' + team.color + '">' + p.number + '</div>' +
+          '<div class="player-info">' +
+            '<div class="name">' + p.name + '</div>' +
+            '<div class="position">' + p.position + '</div>' +
+          '</div>' +
+        '</button>';
+      }
+      // Option to skip player selection
+      html += '<button class="player-select-btn" onclick="selectPlayer(null)" style="border-color:#999">' +
+        '<div class="player-number" style="background:#999">?</div>' +
+        '<div class="player-info">' +
+          '<div class="name">Unknown Player</div>' +
+          '<div class="position">Skip player selection</div>' +
+        '</div>' +
+      '</button>';
+      
+      document.getElementById('modal-players').innerHTML = html;
+      document.getElementById('player-modal').classList.remove('hidden');
+    }
+
+    function closePlayerModal() {
+      document.getElementById('player-modal').classList.add('hidden');
+      pendingEvent = null;
+    }
+
+    function selectPlayer(playerId) {
+      if (pendingEvent) {
+        submitEvent(pendingEvent.teamId, pendingEvent.eventType, playerId);
+      }
+      closePlayerModal();
+    }
+
+    function submitEvent(teamId, eventType, playerId) {
       var data = {
         matchId: currentMatch.id,
         teamId: teamId,
         type: eventType,
         time: timerSeconds
       };
+      if (playerId) {
+        data.playerId = playerId;
+      }
       
       postApi('/api/match-events', data).then(function(result) {
         if (result) {
@@ -554,6 +786,15 @@
           });
         }
       });
+    }
+
+    function findPlayer(playerId) {
+      if (!playerId) return null;
+      var allPlayers = homePlayers.concat(awayPlayers);
+      for (var i = 0; i < allPlayers.length; i++) {
+        if (allPlayers[i].id === playerId) return allPlayers[i];
+      }
+      return null;
     }
 
     function deleteEvent(eventId) {
@@ -581,15 +822,17 @@
       for (var i = 0; i < matchEvents.length; i++) {
         var evt = matchEvents[i];
         var team = findTeam(evt.teamId);
+        var player = findPlayer(evt.playerId);
         var mins = Math.floor(evt.time / 60);
         var secs = evt.time % 60;
         var timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
         var typeLabel = getEventLabel(evt.type);
+        var playerName = player ? '#' + player.number + ' ' + player.name : '';
         
         html += '<div class="event-item">' +
           '<span class="event-time">' + timeStr + '</span>' +
           '<span class="event-team"><div class="badge" style="background:' + team.color + '">' + team.shortName + '</div></span>' +
-          '<span class="event-type">' + typeLabel + '</span>' +
+          '<span class="event-type">' + typeLabel + (playerName ? '<div class="event-player">' + playerName + '</div>' : '') + '</span>' +
           '<button class="event-delete" onclick="deleteEvent(' + evt.id + ')">x</button>' +
         '</div>';
       }
