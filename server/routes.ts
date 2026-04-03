@@ -150,7 +150,8 @@ export async function registerRoutes(
       const homePlayers = await storage.getPlayers(match.homeTeamId);
       const awayPlayers = await storage.getPlayers(match.awayTeamId);
 
-      generateMatchPdf({ ...match, events }, homePlayers, awayPlayers, res);
+      const lang = (["bs", "en", "de", "fr"].includes(req.query.lang as string) ? req.query.lang : "bs") as "bs" | "en" | "de" | "fr";
+      generateMatchPdf({ ...match, events }, homePlayers, awayPlayers, res, lang);
     } catch (err) {
       console.error("PDF generation error:", err);
       res.status(500).json({ message: "Failed to generate PDF" });

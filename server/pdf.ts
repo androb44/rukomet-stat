@@ -11,21 +11,91 @@ function formatMinute(seconds: number): string {
   return `${Math.floor(seconds / 60)}'`;
 }
 
-const EVENT_LABELS: Record<string, string> = {
-  goal: "Gol", shot: "Šut", save: "Odbrana", assist: "Asistencija",
-  turnover: "Izgubljena", block: "Blokada", yellow_card: "Žuti karton",
-  "2min": "2 minute", red_card: "Crveni karton",
+type Lang = "bs" | "en" | "de" | "fr";
+
+type PdfStrings = {
+  eventLabels: Record<string, string>;
+  zoneLabels: Record<string, string>;
+  actionLabels: Record<string, string>;
+  player: string; goalsShots: string; total: string; other: string;
+  colPlayer: string; colPos: string; colTot: string; colPct: string;
+  colSv: string; colAs: string; colTf: string; colBl: string;
+  colYc: string; col2m: string; colRc: string;
+  totalRow: string;
+  legend: string;
+  eventLog: string;
+  colMin: string; colEvent: string; colZone: string; colAction: string; colTeam: string;
+  statusFinal: string; statusLive: string; statusUpcoming: string;
+  location: string;
+  footer: string;
+  noData: string;
 };
 
-const ZONE_LABELS: Record<string, string> = {
-  left_wing: "Lijevi krilni", left_9m: "Lijevi 9m", center_9m: "Centar 9m",
-  right_9m: "Desni 9m", right_wing: "Desni krilni", pivot: "Pivot / 6m",
-  penalty_7m: "7m kazneni",
-};
-
-const ACTION_LABELS: Record<string, string> = {
-  set_play: "Postav. napad", counter: "Kontranapad", fast_break: "Brzi prodor",
-  breakthrough: "Proboj", free_throw: "Slobodan bacanj", penalty_7m: "7m kazneni",
+const PDF_STRINGS: Record<Lang, PdfStrings> = {
+  bs: {
+    eventLabels: { goal: "Gol", shot: "Šut", save: "Odbrana", assist: "Asistencija", turnover: "Izgubljena lopta", block: "Blokada", yellow_card: "Žuti karton", "2min": "2 minute", red_card: "Crveni karton" },
+    zoneLabels: { left_wing: "Lijevi krilni", left_9m: "Lijevi 9m", center_9m: "Centar 9m", right_9m: "Desni 9m", right_wing: "Desni krilni", pivot: "Pivot / 6m", penalty_7m: "7m kazneni" },
+    actionLabels: { set_play: "Pozic. napad", counter: "Kontranapad", fast_break: "Brzi napad", breakthrough: "Proboj", free_throw: "Slobodan udarac", penalty_7m: "7m kazneni" },
+    player: "Igrač", goalsShots: "Golovi / Šutevi  —  po poziciji", total: "Ukupno", other: "Ostalo",
+    colPlayer: "Igrač", colPos: "Poz", colTot: "G/Šut", colPct: "%",
+    colSv: "Obr", colAs: "Ast", colTf: "Izg", colBl: "Blk", colYc: "Žk", col2m: "2m", colRc: "Ck",
+    totalRow: "UKUPNO",
+    legend: "9m = šutevi sa 9m  |  6m = pivot/6m  |  Kril = krilni  |  7m = kazneni  |  FB = brzi prodor  |  Proboj = proboj  |  Obr = odbrane  |  Ast = asistencije  |  Izg = izgubljena  |  Blk = blokade  |  Žk = žuti  |  2m = 2 minute  |  Ck = crveni",
+    eventLog: "LOG DOGAĐAJA",
+    colMin: "Min", colEvent: "Događaj", colZone: "Zona", colAction: "Akcija", colTeam: "Tim",
+    statusFinal: "KRAJ", statusLive: "UŽIVO", statusUpcoming: "PREDSTOJEĆE",
+    location: "Lokacija",
+    footer: "Handball Stats Tracker  •  Generirano",
+    noData: "Nema podataka za ovaj tim.",
+  },
+  en: {
+    eventLabels: { goal: "Goal", shot: "Shot", save: "Save", assist: "Assist", turnover: "Turnover", block: "Block", yellow_card: "Yellow Card", "2min": "2 Minutes", red_card: "Red Card" },
+    zoneLabels: { left_wing: "Left Wing", left_9m: "Left 9m", center_9m: "Center 9m", right_9m: "Right 9m", right_wing: "Right Wing", pivot: "Pivot / 6m", penalty_7m: "7m Penalty" },
+    actionLabels: { set_play: "Set Play", counter: "Counter Attack", fast_break: "Fast Break", breakthrough: "Breakthrough", free_throw: "Free Throw", penalty_7m: "7m Penalty" },
+    player: "Player", goalsShots: "Goals / Shots  —  by position", total: "Total", other: "Other",
+    colPlayer: "Player", colPos: "Pos", colTot: "G/Sh", colPct: "%",
+    colSv: "Sv", colAs: "As", colTf: "To", colBl: "Bl", colYc: "Yc", col2m: "2m", colRc: "Rc",
+    totalRow: "TOTAL",
+    legend: "9m = 9m shots  |  6m = pivot/6m  |  Wing = wing shots  |  7m = penalty  |  FB = fast break  |  Brk = breakthrough  |  Sv = saves  |  As = assists  |  To = turnovers  |  Bl = blocks  |  Yc = yellow card  |  2m = 2 min  |  Rc = red card",
+    eventLog: "EVENT LOG",
+    colMin: "Min", colEvent: "Event", colZone: "Zone", colAction: "Action", colTeam: "Team",
+    statusFinal: "FINAL", statusLive: "LIVE", statusUpcoming: "UPCOMING",
+    location: "Location",
+    footer: "Handball Stats Tracker  •  Generated",
+    noData: "No data for this team.",
+  },
+  de: {
+    eventLabels: { goal: "Tor", shot: "Wurf", save: "Parade", assist: "Assist", turnover: "Ballverlust", block: "Block", yellow_card: "Gelbe Karte", "2min": "2-Minuten", red_card: "Rote Karte" },
+    zoneLabels: { left_wing: "Linker Flügel", left_9m: "Links 9m", center_9m: "Mitte 9m", right_9m: "Rechts 9m", right_wing: "Rechter Flügel", pivot: "Kreisläufer / 6m", penalty_7m: "7m Strafwurf" },
+    actionLabels: { set_play: "Positionsspiel", counter: "Konterangriff", fast_break: "Schnellangriff", breakthrough: "Durchbruch", free_throw: "Freiwurf", penalty_7m: "7m Strafwurf" },
+    player: "Spieler", goalsShots: "Tore / Würfe  —  nach Position", total: "Gesamt", other: "Sonstiges",
+    colPlayer: "Spieler", colPos: "Pos", colTot: "T/W", colPct: "%",
+    colSv: "Par", colAs: "Ass", colTf: "Verl", colBl: "Blk", colYc: "Gk", col2m: "2m", colRc: "Rk",
+    totalRow: "GESAMT",
+    legend: "9m = 9m-Würfe  |  6m = Kreisläufer  |  Flg = Flügelwürfe  |  7m = Strafwurf  |  FB = Schnellangriff  |  Dbr = Durchbruch  |  Par = Paraden  |  Ass = Assists  |  Verl = Ballverluste  |  Blk = Blocks  |  Gk = Gelbe Karte  |  2m = 2 Min  |  Rk = Rote Karte",
+    eventLog: "EREIGNIS-LOG",
+    colMin: "Min", colEvent: "Ereignis", colZone: "Zone", colAction: "Aktion", colTeam: "Team",
+    statusFinal: "ABPFIFF", statusLive: "LIVE", statusUpcoming: "BEVORSTEHEND",
+    location: "Spielort",
+    footer: "Handball Stats Tracker  •  Erstellt am",
+    noData: "Keine Daten für dieses Team.",
+  },
+  fr: {
+    eventLabels: { goal: "But", shot: "Tir", save: "Arrêt", assist: "Passe décisive", turnover: "Perte de balle", block: "Blocage", yellow_card: "Carton jaune", "2min": "2 minutes", red_card: "Carton rouge" },
+    zoneLabels: { left_wing: "Ailier gauche", left_9m: "Gauche 9m", center_9m: "Centre 9m", right_9m: "Droite 9m", right_wing: "Ailier droit", pivot: "Pivot / 6m", penalty_7m: "7m penalti" },
+    actionLabels: { set_play: "Jeu placé", counter: "Contre-attaque", fast_break: "Contre rapide", breakthrough: "Percée", free_throw: "Jet franc", penalty_7m: "7m penalti" },
+    player: "Joueur", goalsShots: "Buts / Tirs  —  par position", total: "Total", other: "Autre",
+    colPlayer: "Joueur", colPos: "Pos", colTot: "B/T", colPct: "%",
+    colSv: "Arr", colAs: "Pas", colTf: "Pert", colBl: "Blq", colYc: "Cj", col2m: "2m", colRc: "Cr",
+    totalRow: "TOTAL",
+    legend: "9m = tirs à 9m  |  6m = pivot/6m  |  Aile = tirs ailier  |  7m = penalty  |  FB = contre rapide  |  Perc = percée  |  Arr = arrêts  |  Pas = passes décisives  |  Pert = pertes de balle  |  Blq = blocages  |  Cj = carton jaune  |  2m = 2 min  |  Cr = carton rouge",
+    eventLog: "JOURNAL DES ÉVÉNEMENTS",
+    colMin: "Min", colEvent: "Événement", colZone: "Zone", colAction: "Action", colTeam: "Équipe",
+    statusFinal: "FINAL", statusLive: "EN DIRECT", statusUpcoming: "À VENIR",
+    location: "Lieu",
+    footer: "Handball Stats Tracker  •  Généré le",
+    noData: "Aucune donnée pour cette équipe.",
+  },
 };
 
 // Classify each shot into display zones matching IHF format
@@ -41,7 +111,8 @@ function shotZoneCategory(event: any): "9m" | "6m" | "wing" | "7m" | "fb" | "brk
   return null;
 }
 
-export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: any[], res: Response) {
+export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: any[], res: Response, lang: Lang = "bs") {
+  const S = PDF_STRINGS[lang] ?? PDF_STRINGS.bs;
   const doc = new PDFDocument({ margin: 40, size: "A4" });
 
   const homeRgb = hexToRgb(match.homeTeam.color);
@@ -76,7 +147,7 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
 
   doc.fill("#ffffff").font("Helvetica-Bold").fontSize(32)
     .text(`${match.homeScore ?? 0}  :  ${match.awayScore ?? 0}`, 0, 22, { align: "center", width: pageW });
-  const statusLabel = match.status === "finished" ? "FINAL" : match.status === "in_progress" ? "LIVE" : "UPCOMING";
+  const statusLabel = match.status === "finished" ? S.statusFinal : match.status === "in_progress" ? S.statusLive : S.statusUpcoming;
   doc.fill("rgba(255,255,255,0.50)").font("Helvetica").fontSize(7)
     .text(statusLabel, 0, 58, { align: "center", width: pageW });
 
@@ -85,7 +156,7 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
     .text(format(new Date(match.date), "EEEE, d MMMM yyyy  •  HH:mm"), margin, y, { align: "center", width: contentW });
   if (match.location) {
     y += 13;
-    doc.text(`Lokacija: ${match.location}`, margin, y, { align: "center", width: contentW });
+    doc.text(`${S.location}: ${match.location}`, margin, y, { align: "center", width: contentW });
   }
   y += 18;
 
@@ -121,23 +192,23 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
   // Then total G/Šut | % | Odbrane | Asist | Izgub | Blokade | Kazne
   // Total width must equal contentW
   const C = {
-    num:  { w: 18, label: "#",       title: "Broj",          align: "center" as const },
-    name: { w: 88, label: "Igrač",   title: "Igrač",         align: "left" as const },
-    m9:   { w: 40, label: "9m",      title: "9m šutevi",     align: "center" as const },
-    m6:   { w: 37, label: "6m",      title: "6m / pivot",    align: "center" as const },
-    wing: { w: 37, label: "Kril",    title: "Krilni šutevi", align: "center" as const },
-    m7:   { w: 34, label: "7m",      title: "7m kazneni",    align: "center" as const },
-    fb:   { w: 34, label: "FB",      title: "Brzi prodor",   align: "center" as const },
-    brk:  { w: 37, label: "Proboj",  title: "Proboj",        align: "center" as const },
-    tot:  { w: 50, label: "G/Šut",   title: "Ukupno G/Šut",  align: "center" as const },
-    pct:  { w: 24, label: "%",       title: "Efikasnost",    align: "center" as const },
-    sv:   { w: 20, label: "Obr",     title: "Odbrane (GK)",  align: "center" as const },
-    as:   { w: 20, label: "Ast",     title: "Asistencije",   align: "center" as const },
-    tf:   { w: 20, label: "Izg",     title: "Izgubljena",    align: "center" as const },
-    bl:   { w: 20, label: "Blk",     title: "Blokade",       align: "center" as const },
-    pen:  { w: 16, label: "Žk",      title: "Žuti karton",   align: "center" as const },
-    two:  { w: 16, label: "2m",      title: "2 minute",      align: "center" as const },
-    rc:   { w: 16, label: "Ck",      title: "Crveni karton", align: "center" as const },
+    num:  { w: 18, label: "#",         title: "#",         align: "center" as const },
+    name: { w: 88, label: S.colPlayer, title: S.colPlayer, align: "left" as const },
+    m9:   { w: 40, label: "9m",        title: "9m",        align: "center" as const },
+    m6:   { w: 37, label: "6m",        title: "6m",        align: "center" as const },
+    wing: { w: 37, label: "Kril",      title: "Kril",      align: "center" as const },
+    m7:   { w: 34, label: "7m",        title: "7m",        align: "center" as const },
+    fb:   { w: 34, label: "FB",        title: "FB",        align: "center" as const },
+    brk:  { w: 37, label: "Proboj",    title: "Proboj",    align: "center" as const },
+    tot:  { w: 50, label: S.colTot,    title: S.colTot,    align: "center" as const },
+    pct:  { w: 24, label: "%",         title: "%",         align: "center" as const },
+    sv:   { w: 20, label: S.colSv,     title: S.colSv,     align: "center" as const },
+    as:   { w: 20, label: S.colAs,     title: S.colAs,     align: "center" as const },
+    tf:   { w: 20, label: S.colTf,     title: S.colTf,     align: "center" as const },
+    bl:   { w: 20, label: S.colBl,     title: S.colBl,     align: "center" as const },
+    pen:  { w: 16, label: S.colYc,     title: S.colYc,     align: "center" as const },
+    two:  { w: 16, label: S.col2m,     title: S.col2m,     align: "center" as const },
+    rc:   { w: 16, label: S.colRc,     title: S.colRc,     align: "center" as const },
   };
   // Verify total: 18+88+40+37+37+34+34+37+50+24+20+20+20+20+16+16+16 = 527... let me recalculate
   // 18+88=106, +40=146, +37=183, +37=220, +34=254, +34=288, +37=325, +50=375, +24=399, +20=419, +20=439, +20=459, +20=479, +16=495, +16=511, +16=527
@@ -200,14 +271,14 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
 
     const nameW = cols[0].w + cols[1].w;
     doc.fill("#ffffffcc").font("Helvetica-Bold").fontSize(6.5)
-      .text("Igrač", margin + 2, y + 2, { width: nameW, lineBreak: false });
+      .text(S.player, margin + 2, y + 2, { width: nameW, lineBreak: false });
     const zoneStartX = margin + nameW;
     doc.fill("#ffffffcc").font("Helvetica-Bold").fontSize(6.5)
-      .text("Golovi / Šutevi  —  po poziciji", zoneStartX + 2, y + 2, { width: shotGroupW - 4, align: "center", lineBreak: false });
+      .text(S.goalsShots, zoneStartX + 2, y + 2, { width: shotGroupW - 4, align: "center", lineBreak: false });
     doc.fill("#ffffffcc").font("Helvetica-Bold").fontSize(6.5)
-      .text("Ukupno", afterShotX + 2, y + 2, { width: cols[8].w + cols[9].w - 4, align: "center", lineBreak: false });
+      .text(S.total, afterShotX + 2, y + 2, { width: cols[8].w + cols[9].w - 4, align: "center", lineBreak: false });
     doc.fill("#ffffffcc").font("Helvetica-Bold").fontSize(6.5)
-      .text("Ostalo", afterShotX + cols[8].w + cols[9].w + 2, y + 2, { width: contentW - (afterShotX - margin) - cols[8].w - cols[9].w - 2, align: "center", lineBreak: false });
+      .text(S.other, afterShotX + cols[8].w + cols[9].w + 2, y + 2, { width: contentW - (afterShotX - margin) - cols[8].w - cols[9].w - 2, align: "center", lineBreak: false });
     y += 13;
 
     // Row 2: column labels
@@ -248,7 +319,7 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
       .sort((a, b) => b!.zs.totGoals - a!.zs.totGoals) as PlayerRow[];
 
     if (playerRows.length === 0) {
-      y = drawRow([{ text: "Nema podataka za ovaj tim.", width: contentW, color: "#aaaaaa" }], y, "#fafafa");
+      y = drawRow([{ text: S.noData, width: contentW, color: "#aaaaaa" }], y, "#fafafa");
       y += 10;
       return;
     }
@@ -294,7 +365,7 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
 
     y = drawRow([
       { text: "", width: cols[0].w },
-      { text: "UKUPNO", width: cols[1].w, bold: true, color: `rgb(${rgb[0]},${rgb[1]},${rgb[2]})` },
+      { text: S.totalRow, width: cols[1].w, bold: true, color: `rgb(${rgb[0]},${rgb[1]},${rgb[2]})` },
       { text: gsLabel(teamZs.m9.goals, teamZs.m9.total), width: cols[2].w, bold: true, align: "center" },
       { text: gsLabel(teamZs.m6.goals, teamZs.m6.total), width: cols[3].w, bold: true, align: "center" },
       { text: gsLabel(teamZs.wing.goals, teamZs.wing.total), width: cols[4].w, bold: true, align: "center" },
@@ -316,7 +387,7 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
     y += 3;
     doc.fill("#999999").font("Helvetica").fontSize(6)
       .text(
-        "9m = šutevi sa 9m  |  6m = pivot/6m  |  Kril = krilni šutevi  |  7m = kazneni  |  FB = brzi prodor  |  Proboj = proboj  |  Obr = odbrane  |  Ast = asistencije  |  Izg = izgubljena lopta  |  Blk = blokade  |  Žk = žuti karton  |  2m = 2 minute  |  Ck = crveni karton",
+        S.legend,
         margin, y, { width: contentW }
       );
     y += 14;
@@ -329,17 +400,17 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
   if (events.length > 0) {
     if (y > 640) { doc.addPage(); y = 40; }
 
-    y = sectionTitle("LOG DOGAĐAJA", y);
+    y = sectionTitle(S.eventLog, y);
 
     const evColW = { min: 32, type: 96, zone: 118, action: 100, player: 118, team: contentW - 32 - 96 - 118 - 100 - 118 };
 
     y = drawRow([
-      { text: "Min", width: evColW.min, bold: true, color: "#ffffff", align: "center" },
-      { text: "Događaj", width: evColW.type, bold: true, color: "#ffffff" },
-      { text: "Zona", width: evColW.zone, bold: true, color: "#ffffff" },
-      { text: "Akcija", width: evColW.action, bold: true, color: "#ffffff" },
-      { text: "Igrač", width: evColW.player, bold: true, color: "#ffffff" },
-      { text: "Tim", width: evColW.team, bold: true, color: "#ffffff" },
+      { text: S.colMin, width: evColW.min, bold: true, color: "#ffffff", align: "center" },
+      { text: S.colEvent, width: evColW.type, bold: true, color: "#ffffff" },
+      { text: S.colZone, width: evColW.zone, bold: true, color: "#ffffff" },
+      { text: S.colAction, width: evColW.action, bold: true, color: "#ffffff" },
+      { text: S.colPlayer, width: evColW.player, bold: true, color: "#ffffff" },
+      { text: S.colTeam, width: evColW.team, bold: true, color: "#ffffff" },
     ], y, "#14141e", 16);
 
     const allPlayers = [...homePlayers, ...awayPlayers];
@@ -354,9 +425,9 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
 
       y = drawRow([
         { text: formatMinute(ev.time), width: evColW.min, align: "center", color: "#555555" },
-        { text: EVENT_LABELS[ev.type] ?? ev.type, width: evColW.type, bold: ev.type === "goal" },
-        { text: ev.shotZone ? (ZONE_LABELS[ev.shotZone] ?? ev.shotZone) : "—", width: evColW.zone, color: "#555555" },
-        { text: ev.actionType ? (ACTION_LABELS[ev.actionType] ?? ev.actionType) : "—", width: evColW.action, color: "#555555" },
+        { text: S.eventLabels[ev.type] ?? ev.type, width: evColW.type, bold: ev.type === "goal" },
+        { text: ev.shotZone ? (S.zoneLabels[ev.shotZone] ?? ev.shotZone) : "—", width: evColW.zone, color: "#555555" },
+        { text: ev.actionType ? (S.actionLabels[ev.actionType] ?? ev.actionType) : "—", width: evColW.action, color: "#555555" },
         { text: player ? `#${player.number} ${player.name}` : "—", width: evColW.player },
         { text: isHome ? match.homeTeam.name : match.awayTeam.name, width: evColW.team, bold: true, color: `rgb(${tRgb[0]},${tRgb[1]},${tRgb[2]})` },
       ], y, bg);
@@ -366,7 +437,7 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
   // ── FOOTER ──────────────────────────────────────────────────────────
   doc.fill("#bbbbbb").font("Helvetica").fontSize(6.5)
     .text(
-      `Handball Stats Tracker  •  Generirano ${format(new Date(), "d. M. yyyy. HH:mm")}`,
+      `${S.footer} ${format(new Date(), "d. M. yyyy. HH:mm")}`,
       margin, doc.page.height - 22,
       { align: "center", width: contentW, lineBreak: false }
     );

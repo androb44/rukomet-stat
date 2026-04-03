@@ -551,7 +551,7 @@ export function useT() {
 }
 
 export const LANG_LABELS: Record<LangCode, string> = {
-  bs: "BS",
+  bs: "CG",
   en: "EN",
   de: "DE",
   fr: "FR",

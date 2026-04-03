@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Team, Player } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { useT } from "@/lib/i18n";
+import { useT, useLanguage } from "@/lib/i18n";
 
 const EVENT_TYPES = [
   { type: "goal",        labelKey: "event.goal",        icon: Trophy,        color: "bg-green-500 hover:bg-green-600 text-white" },
@@ -197,6 +197,7 @@ const NEEDS_ZONE = new Set<EventType>(["goal", "shot"]);
 
 export default function MatchDetails() {
   const t = useT();
+  const { lang } = useLanguage();
   const { id } = useParams();
   const matchId = Number(id);
   const queryClient = useQueryClient();
@@ -429,7 +430,7 @@ export default function MatchDetails() {
         backTo="/matches"
         action={
           <a
-            href={`/api/matches/${matchId}/pdf`}
+            href={`/api/matches/${matchId}/pdf?lang=${lang}`}
             target="_blank"
             rel="noopener noreferrer"
             data-testid="button-export-pdf"
@@ -625,7 +626,7 @@ export default function MatchDetails() {
 
         {/* Export PDF */}
         <a
-          href={`/api/matches/${matchId}/pdf`}
+          href={`/api/matches/${matchId}/pdf?lang=${lang}`}
           target="_blank"
           rel="noopener noreferrer"
           className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-dashed border-primary/30 text-primary font-semibold text-sm hover:bg-primary/5 transition-colors active:scale-[0.98]"
