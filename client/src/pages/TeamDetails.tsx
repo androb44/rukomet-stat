@@ -1,6 +1,6 @@
+import { useState } from "react";
 import { useParams } from "wouter";
-import { useTeam } from "@/hooks/use-teams";
-import { usePlayers, useCreatePlayer, useDeletePlayer } from "@/hooks/use-players";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,82 +10,105 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPlayerSchema } from "@shared/schema";
-import { Plus, Trash2, Shirt } from "lucide-react";
 import { z } from "zod";
+import { Plus, Trash2 } from "lucide-react";
+import type { Team, Player } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
-const positions = ["GK", "LW", "LB", "CB", "RB", "RW", "P"];
+const POSITIONS = ["GK", "LW", "LB", "CB", "RB", "RW", "P"];
 
 export default function TeamDetails() {
   const { id } = useParams();
   const teamId = Number(id);
-  const { data: team, isLoading: teamLoading } = useTeam(teamId);
-  const { data: players, isLoading: playersLoading } = usePlayers(teamId);
-  const deletePlayer = useDeletePlayer();
+  const [addOpen, setAddOpen] = useState(false);
 
-  if (teamLoading || playersLoading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
-  if (!team) return <div className="p-8 text-center text-destructive">Team not found</div>;
+  const { data: team, isLoading: teamLoading } = useQuery<Team>({
+    queryKey: ["/api/teams", teamId],
+    queryFn: async () => {
+      const res = await fetch(`/api/teams/${teamId}`);
+      if (!res.ok) throw new Error("Team not found");
+      return res.json();
+    },
+  });
+
+  const { data: players, isLoading: playersLoading } = useQuery<Player[]>({
+    queryKey: ["/api/players", teamId],
+    queryFn: async () => {
+      const res = await fetch(`/api/players?teamId=${teamId}`);
+      if (!res.ok) throw new Error("Failed to load players");
+      return res.json();
+    },
+  });
+
+  if (teamLoading || playersLoading) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <PageHeader title="Team" backTo="/teams" />
+        <div className="p-4 space-y-3 max-w-lg mx-auto">
+          <div className="h-32 bg-muted/50 rounded-2xl animate-pulse" />
+          <div className="h-16 bg-muted/50 rounded-xl animate-pulse" />
+          <div className="h-16 bg-muted/50 rounded-xl animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!team) {
+    return (
+      <div className="min-h-screen bg-background pb-24 flex items-center justify-center">
+        <p className="text-destructive">Team not found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <PageHeader 
-        title={team.name} 
-        subtitle="Roster Management" 
+      <PageHeader
+        title={team.name}
+        subtitle="Roster Management"
         backTo="/teams"
-        action={<AddPlayerDialog teamId={teamId} />}
+        action={<AddPlayerDialog teamId={teamId} open={addOpen} onOpenChange={setAddOpen} />}
       />
 
-      <main className="max-w-4xl mx-auto p-4 space-y-6">
+      <main className="max-w-lg mx-auto p-4 space-y-5">
         {/* Team Banner */}
-        <div 
-          className="rounded-3xl p-6 text-white shadow-lg relative overflow-hidden"
+        <div
+          className="rounded-2xl p-5 text-white relative overflow-hidden"
           style={{ backgroundColor: team.color }}
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-black/10 pointer-events-none" />
-          <div className="relative z-10 flex items-center gap-4">
-            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center text-3xl font-bold border border-white/30">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-black/20" />
+          <div className="relative flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center text-2xl font-bold border border-white/30">
               {team.shortName}
             </div>
             <div>
-              <h2 className="text-2xl font-bold font-display">{team.name}</h2>
-              <p className="opacity-90">{players?.length ?? 0} Players</p>
+              <h2 className="text-xl font-bold">{team.name}</h2>
+              <p className="opacity-80 text-sm">{players?.length ?? 0} players</p>
             </div>
           </div>
         </div>
 
-        {/* Players List */}
+        {/* Players */}
         <div className="space-y-3">
-          <h3 className="text-lg font-bold px-1">Players</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-wider">Roster</h3>
+
+          {players?.length === 0 && (
+            <div className="border border-dashed border-border rounded-xl p-8 text-center text-muted-foreground">
+              <p className="text-sm">No players yet.</p>
+              <button
+                className="mt-1 text-primary text-sm font-medium hover:underline"
+                onClick={() => setAddOpen(true)}
+                data-testid="button-add-first-player"
+              >
+                Add your first player
+              </button>
+            </div>
+          )}
+
+          <div className="grid gap-2 sm:grid-cols-2">
             {players?.map((player) => (
-              <div key={player.id} className="bg-card border border-border/50 rounded-xl p-3 flex items-center justify-between group">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center font-mono font-bold text-foreground">
-                    {player.number}
-                  </div>
-                  <div>
-                    <div className="font-bold">{player.name}</div>
-                    <div className="text-xs text-muted-foreground font-medium bg-muted px-2 py-0.5 rounded-md inline-block">
-                      {player.position}
-                    </div>
-                  </div>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 -mr-2"
-                  onClick={() => deletePlayer.mutate(player.id)}
-                  disabled={deletePlayer.isPending}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+              <PlayerRow key={player.id} player={player} teamId={teamId} />
             ))}
-            
-            {players?.length === 0 && (
-              <div className="col-span-full py-8 text-center text-muted-foreground bg-muted/30 rounded-xl border border-dashed border-border">
-                No players added yet.
-              </div>
-            )}
           </div>
         </div>
       </main>
@@ -93,39 +116,95 @@ export default function TeamDetails() {
   );
 }
 
-function AddPlayerDialog({ teamId }: { teamId: number }) {
-  const [open, setOpen] = useState(false);
-  const { mutate, isPending } = useCreatePlayer();
-  
-  // Need to handle number coercion because input type="number" returns string
+function PlayerRow({ player, teamId }: { player: Player; teamId: number }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { mutate: deletePlayer, isPending } = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/players/${player.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete player");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/players", teamId] });
+      toast({ title: "Player removed" });
+    },
+    onError: () => toast({ title: "Failed to remove player", variant: "destructive" }),
+  });
+
+  return (
+    <div
+      className="bg-card border border-border/50 rounded-xl p-3 flex items-center gap-3"
+      data-testid={`player-row-${player.id}`}
+    >
+      <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center font-bold font-mono text-sm shrink-0">
+        {player.number}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold truncate">{player.name}</div>
+        <div className="text-xs text-muted-foreground">
+          <span className="bg-muted px-1.5 py-0.5 rounded font-medium">{player.position}</span>
+        </div>
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+        onClick={() => deletePlayer()}
+        disabled={isPending}
+        data-testid={`button-delete-player-${player.id}`}
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
+
+function AddPlayerDialog({
+  teamId,
+  open,
+  onOpenChange,
+}: {
+  teamId: number;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   const formSchema = insertPlayerSchema.extend({
-    number: z.coerce.number().min(1).max(99),
-    teamId: z.coerce.number(), // Ensure this is handled
+    number: z.coerce.number().min(1, "Required").max(99),
+    teamId: z.coerce.number(),
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      number: undefined,
-      position: "GK",
-      teamId: teamId,
-    },
+    defaultValues: { name: "", number: undefined as any, position: "GK", teamId },
   });
 
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    mutate(data, {
-      onSuccess: () => {
-        setOpen(false);
-        form.reset({ name: "", number: undefined, position: "GK", teamId });
-      },
-    });
-  };
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
+      const res = await fetch("/api/players", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to add player");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/players", teamId] });
+      onOpenChange(false);
+      form.reset({ name: "", number: undefined as any, position: "GK", teamId });
+      toast({ title: "Player added!" });
+    },
+    onError: () => toast({ title: "Failed to add player", variant: "destructive" }),
+  });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" className="rounded-full shadow-md">
+        <Button size="sm" className="rounded-full" data-testid="button-add-player">
           <Plus className="w-4 h-4 mr-1" /> Add Player
         </Button>
       </DialogTrigger>
@@ -134,7 +213,7 @@ function AddPlayerDialog({ teamId }: { teamId: number }) {
           <DialogTitle>Add Player</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit((d) => mutate(d))} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -142,7 +221,7 @@ function AddPlayerDialog({ teamId }: { teamId: number }) {
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" className="rounded-xl" {...field} />
+                    <Input placeholder="John Doe" className="rounded-xl" data-testid="input-player-name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -154,12 +233,16 @@ function AddPlayerDialog({ teamId }: { teamId: number }) {
                 name="number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Jersey Number</FormLabel>
+                    <FormLabel>Jersey #</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <Shirt className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                        <Input type="number" placeholder="10" className="pl-9 rounded-xl" {...field} />
-                      </div>
+                      <Input
+                        type="number"
+                        placeholder="10"
+                        className="rounded-xl"
+                        data-testid="input-player-number"
+                        {...field}
+                        value={field.value ?? ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -171,14 +254,14 @@ function AddPlayerDialog({ teamId }: { teamId: number }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Position</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="Select" />
+                        <SelectTrigger className="rounded-xl" data-testid="select-player-position">
+                          <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {positions.map(pos => (
+                        {POSITIONS.map((pos) => (
                           <SelectItem key={pos} value={pos}>{pos}</SelectItem>
                         ))}
                       </SelectContent>
@@ -188,7 +271,7 @@ function AddPlayerDialog({ teamId }: { teamId: number }) {
                 )}
               />
             </div>
-            <Button type="submit" className="w-full rounded-xl" disabled={isPending}>
+            <Button type="submit" className="w-full rounded-xl" disabled={isPending} data-testid="button-submit-player">
               {isPending ? "Adding..." : "Add Player"}
             </Button>
           </form>
