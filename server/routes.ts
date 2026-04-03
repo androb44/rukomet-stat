@@ -5,7 +5,6 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import path from "path";
 import fs from "fs";
-import { generateMatchPdf } from "./pdf";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -151,6 +150,7 @@ export async function registerRoutes(
       const awayPlayers = await storage.getPlayers(match.awayTeamId);
 
       const lang = (["bs", "en", "de", "fr"].includes(req.query.lang as string) ? req.query.lang : "bs") as "bs" | "en" | "de" | "fr";
+      const { generateMatchPdf } = await import("./pdf");
       generateMatchPdf({ ...match, events }, homePlayers, awayPlayers, res, lang);
     } catch (err) {
       console.error("PDF generation error:", err);
