@@ -291,6 +291,7 @@ export default function MatchDetails() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  const [customAction, setCustomAction] = useState<string>("");
   const [step, setStep] = useState<"event" | "zone_action" | "player" | "outcome" | "second_player">("event");
   const [pendingShooterId, setPendingShooterId] = useState<number | undefined>(undefined);
   const [shotOutcome, setShotOutcome] = useState<ShotOutcome | null>(null);
@@ -300,6 +301,7 @@ export default function MatchDetails() {
     setSelectedEvent(null);
     setSelectedZone(null);
     setSelectedAction(null);
+    setCustomAction("");
     setPendingShooterId(undefined);
     setShotOutcome(null);
     setStep("event");
@@ -355,7 +357,7 @@ export default function MatchDetails() {
     // All other events: submit immediately
     const teamId = scorerTeam === "home" ? match.homeTeamId : match.awayTeamId;
     createEvent.mutate(
-      { teamId, playerId, type: selectedEvent, time: timerSeconds, shotZone: selectedZone ?? undefined, actionType: selectedAction ?? undefined },
+      { teamId, playerId, type: selectedEvent, time: timerSeconds, shotZone: selectedZone ?? undefined, actionType: selectedAction || customAction || undefined },
       { onSuccess: () => closeScorer() }
     );
   };
@@ -373,14 +375,14 @@ export default function MatchDetails() {
         type: "shot",
         time: timerSeconds,
         shotZone: selectedZone ?? undefined,
-        actionType: selectedAction ?? undefined,
+        actionType: selectedAction || customAction || undefined,
       });
       setStep("second_player");
     } else {
       // post/missed — just record the shot
       const teamId = scorerTeam === "home" ? match.homeTeamId : match.awayTeamId;
       createEvent.mutate(
-        { teamId, playerId: pendingShooterId, type: "shot", time: timerSeconds, shotZone: selectedZone ?? undefined, actionType: selectedAction ?? undefined },
+        { teamId, playerId: pendingShooterId, type: "shot", time: timerSeconds, shotZone: selectedZone ?? undefined, actionType: selectedAction || customAction || undefined },
         { onSuccess: () => closeScorer() }
       );
     }
@@ -714,11 +716,14 @@ export default function MatchDetails() {
 
                 <div>
                   <p className="text-sm text-muted-foreground font-medium mb-2">{t("match.selectAction")}</p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 mb-2">
                     {ACTION_TYPES.map((act) => (
                       <button
                         key={act.id}
-                        onClick={() => setSelectedAction(act.id === selectedAction ? null : act.id)}
+                        onClick={() => {
+                          if (selectedAction === act.id) { setSelectedAction(null); }
+                          else { setSelectedAction(act.id); setCustomAction(""); }
+                        }}
                         className={cn(
                           "p-2.5 rounded-xl text-xs font-semibold text-left border transition-all",
                           selectedAction === act.id
@@ -731,6 +736,14 @@ export default function MatchDetails() {
                       </button>
                     ))}
                   </div>
+                  <input
+                    type="text"
+                    value={customAction}
+                    onChange={(e) => { setCustomAction(e.target.value); setSelectedAction(null); }}
+                    placeholder={t("match.customAction")}
+                    className="w-full px-3 py-2 rounded-xl text-sm border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    data-testid="input-custom-action"
+                  />
                 </div>
 
                 {/* Next button — always enabled: zone is optional */}

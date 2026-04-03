@@ -18,7 +18,7 @@ type PdfStrings = {
   zoneLabels: Record<string, string>;
   actionLabels: Record<string, string>;
   player: string; goalsShots: string; total: string; other: string;
-  colPlayer: string; colPos: string; colTot: string; colPct: string;
+  colPlayer: string; colPos: string; colWing: string; colBreak: string; colTot: string; colPct: string;
   colSv: string; colAs: string; colTf: string; colBl: string;
   colYc: string; col2m: string; colRc: string;
   totalRow: string;
@@ -37,7 +37,7 @@ const PDF_STRINGS: Record<Lang, PdfStrings> = {
     zoneLabels: { left_wing: "Lijevi krilni", left_9m: "Lijevi 9m", center_9m: "Centar 9m", right_9m: "Desni 9m", right_wing: "Desni krilni", pivot: "Pivot / 6m", penalty_7m: "7m kazneni" },
     actionLabels: { set_play: "Pozic. napad", counter: "Kontranapad", fast_break: "Brzi napad", breakthrough: "Proboj", free_throw: "Slobodan udarac", penalty_7m: "7m kazneni" },
     player: "Igrač", goalsShots: "Golovi / Šutevi  —  po poziciji", total: "Ukupno", other: "Ostalo",
-    colPlayer: "Igrač", colPos: "Poz", colTot: "G/Šut", colPct: "%",
+    colPlayer: "Igrač", colPos: "Poz", colWing: "Kril", colBreak: "Proboj", colTot: "G/Šut", colPct: "%",
     colSv: "Obr", colAs: "Ast", colTf: "Izg", colBl: "Blk", colYc: "Žk", col2m: "2m", colRc: "Ck",
     totalRow: "UKUPNO",
     legend: "9m = šutevi sa 9m  |  6m = pivot/6m  |  Kril = krilni  |  7m = kazneni  |  FB = brzi prodor  |  Proboj = proboj  |  Obr = odbrane  |  Ast = asistencije  |  Izg = izgubljena  |  Blk = blokade  |  Žk = žuti  |  2m = 2 minute  |  Ck = crveni",
@@ -53,7 +53,7 @@ const PDF_STRINGS: Record<Lang, PdfStrings> = {
     zoneLabels: { left_wing: "Left Wing", left_9m: "Left 9m", center_9m: "Center 9m", right_9m: "Right 9m", right_wing: "Right Wing", pivot: "Pivot / 6m", penalty_7m: "7m Penalty" },
     actionLabels: { set_play: "Set Play", counter: "Counter Attack", fast_break: "Fast Break", breakthrough: "Breakthrough", free_throw: "Free Throw", penalty_7m: "7m Penalty" },
     player: "Player", goalsShots: "Goals / Shots  —  by position", total: "Total", other: "Other",
-    colPlayer: "Player", colPos: "Pos", colTot: "G/Sh", colPct: "%",
+    colPlayer: "Player", colPos: "Pos", colWing: "Wing", colBreak: "Brk", colTot: "G/Sh", colPct: "%",
     colSv: "Sv", colAs: "As", colTf: "To", colBl: "Bl", colYc: "Yc", col2m: "2m", colRc: "Rc",
     totalRow: "TOTAL",
     legend: "9m = 9m shots  |  6m = pivot/6m  |  Wing = wing shots  |  7m = penalty  |  FB = fast break  |  Brk = breakthrough  |  Sv = saves  |  As = assists  |  To = turnovers  |  Bl = blocks  |  Yc = yellow card  |  2m = 2 min  |  Rc = red card",
@@ -69,7 +69,7 @@ const PDF_STRINGS: Record<Lang, PdfStrings> = {
     zoneLabels: { left_wing: "Linker Flügel", left_9m: "Links 9m", center_9m: "Mitte 9m", right_9m: "Rechts 9m", right_wing: "Rechter Flügel", pivot: "Kreisläufer / 6m", penalty_7m: "7m Strafwurf" },
     actionLabels: { set_play: "Positionsspiel", counter: "Konterangriff", fast_break: "Schnellangriff", breakthrough: "Durchbruch", free_throw: "Freiwurf", penalty_7m: "7m Strafwurf" },
     player: "Spieler", goalsShots: "Tore / Würfe  —  nach Position", total: "Gesamt", other: "Sonstiges",
-    colPlayer: "Spieler", colPos: "Pos", colTot: "T/W", colPct: "%",
+    colPlayer: "Spieler", colPos: "Pos", colWing: "Flg", colBreak: "Dbr", colTot: "T/W", colPct: "%",
     colSv: "Par", colAs: "Ass", colTf: "Verl", colBl: "Blk", colYc: "Gk", col2m: "2m", colRc: "Rk",
     totalRow: "GESAMT",
     legend: "9m = 9m-Würfe  |  6m = Kreisläufer  |  Flg = Flügelwürfe  |  7m = Strafwurf  |  FB = Schnellangriff  |  Dbr = Durchbruch  |  Par = Paraden  |  Ass = Assists  |  Verl = Ballverluste  |  Blk = Blocks  |  Gk = Gelbe Karte  |  2m = 2 Min  |  Rk = Rote Karte",
@@ -85,7 +85,7 @@ const PDF_STRINGS: Record<Lang, PdfStrings> = {
     zoneLabels: { left_wing: "Ailier gauche", left_9m: "Gauche 9m", center_9m: "Centre 9m", right_9m: "Droite 9m", right_wing: "Ailier droit", pivot: "Pivot / 6m", penalty_7m: "7m penalti" },
     actionLabels: { set_play: "Jeu placé", counter: "Contre-attaque", fast_break: "Contre rapide", breakthrough: "Percée", free_throw: "Jet franc", penalty_7m: "7m penalti" },
     player: "Joueur", goalsShots: "Buts / Tirs  —  par position", total: "Total", other: "Autre",
-    colPlayer: "Joueur", colPos: "Pos", colTot: "B/T", colPct: "%",
+    colPlayer: "Joueur", colPos: "Pos", colWing: "Aile", colBreak: "Perc", colTot: "B/T", colPct: "%",
     colSv: "Arr", colAs: "Pas", colTf: "Pert", colBl: "Blq", colYc: "Cj", col2m: "2m", colRc: "Cr",
     totalRow: "TOTAL",
     legend: "9m = tirs à 9m  |  6m = pivot/6m  |  Aile = tirs ailier  |  7m = penalty  |  FB = contre rapide  |  Perc = percée  |  Arr = arrêts  |  Pas = passes décisives  |  Pert = pertes de balle  |  Blq = blocages  |  Cj = carton jaune  |  2m = 2 min  |  Cr = carton rouge",
@@ -196,10 +196,10 @@ export function generateMatchPdf(match: any, homePlayers: any[], awayPlayers: an
     name: { w: 88, label: S.colPlayer, title: S.colPlayer, align: "left" as const },
     m9:   { w: 40, label: "9m",        title: "9m",        align: "center" as const },
     m6:   { w: 37, label: "6m",        title: "6m",        align: "center" as const },
-    wing: { w: 37, label: "Kril",      title: "Kril",      align: "center" as const },
+    wing: { w: 37, label: S.colWing,    title: S.colWing,   align: "center" as const },
     m7:   { w: 34, label: "7m",        title: "7m",        align: "center" as const },
     fb:   { w: 34, label: "FB",        title: "FB",        align: "center" as const },
-    brk:  { w: 37, label: "Proboj",    title: "Proboj",    align: "center" as const },
+    brk:  { w: 37, label: S.colBreak,  title: S.colBreak,  align: "center" as const },
     tot:  { w: 50, label: S.colTot,    title: S.colTot,    align: "center" as const },
     pct:  { w: 24, label: "%",         title: "%",         align: "center" as const },
     sv:   { w: 20, label: S.colSv,     title: S.colSv,     align: "center" as const },
