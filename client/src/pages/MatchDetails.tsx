@@ -17,6 +17,9 @@ import {
   ChevronLeft,
   X,
   FileDown,
+  ArrowLeftRight,
+  CircleDot,
+  MinusCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Team, Player } from "@shared/schema";
@@ -179,6 +182,17 @@ function HandballCourt({ selected, onSelect }: { selected: string | null; onSele
   );
 }
 
+type ShotOutcome = "saved" | "post" | "missed" | "blocked";
+
+type IconComponent = (props: { className?: string }) => JSX.Element;
+
+const SHOT_OUTCOMES: { id: ShotOutcome; labelKey: string; descKey: string; icon: IconComponent; color: string }[] = [
+  { id: "saved",   labelKey: "outcome.saved",   descKey: "outcome.saved.desc",   icon: Shield,        color: "bg-cyan-500 hover:bg-cyan-600 text-white" },
+  { id: "post",    labelKey: "outcome.post",     descKey: "outcome.post.desc",    icon: CircleDot,     color: "bg-amber-500 hover:bg-amber-600 text-white" },
+  { id: "missed",  labelKey: "outcome.missed",   descKey: "outcome.missed.desc",  icon: MinusCircle,   color: "bg-zinc-500 hover:bg-zinc-600 text-white" },
+  { id: "blocked", labelKey: "outcome.blocked",  descKey: "outcome.blocked.desc", icon: ArrowLeftRight, color: "bg-teal-600 hover:bg-teal-700 text-white" },
+];
+
 const NEEDS_ZONE = new Set<EventType>(["goal", "shot"]);
 
 export default function MatchDetails() {
@@ -276,24 +290,29 @@ export default function MatchDetails() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
-  const [step, setStep] = useState<"event" | "zone_action" | "player">("event");
+  const [step, setStep] = useState<"event" | "zone_action" | "player" | "outcome" | "second_player">("event");
+  const [pendingShooterId, setPendingShooterId] = useState<number | undefined>(undefined);
+  const [shotOutcome, setShotOutcome] = useState<ShotOutcome | null>(null);
 
-  const openScorer = (side: "home" | "away") => {
-    setScorerTeam(side);
+  const resetSheet = () => {
+    setScorerTeam(null);
     setSelectedEvent(null);
     setSelectedZone(null);
     setSelectedAction(null);
+    setPendingShooterId(undefined);
+    setShotOutcome(null);
     setStep("event");
+  };
+
+  const openScorer = (side: "home" | "away") => {
+    resetSheet();
+    setScorerTeam(side);
     setScorerOpen(true);
   };
 
   const closeScorer = () => {
     setScorerOpen(false);
-    setScorerTeam(null);
-    setSelectedEvent(null);
-    setSelectedZone(null);
-    setSelectedAction(null);
-    setStep("event");
+    resetSheet();
   };
 
   const handleEventType = (type: EventType) => {
@@ -306,7 +325,13 @@ export default function MatchDetails() {
   };
 
   const handleBack = () => {
-    if (step === "player" && NEEDS_ZONE.has(selectedEvent!)) {
+    if (step === "second_player") {
+      setStep("outcome");
+      setShotOutcome(null);
+    } else if (step === "outcome") {
+      setStep("player");
+      setPendingShooterId(undefined);
+    } else if (step === "player" && NEEDS_ZONE.has(selectedEvent!)) {
       setStep("zone_action");
     } else if (step === "zone_action" || step === "player") {
       setStep("event");
@@ -318,16 +343,54 @@ export default function MatchDetails() {
 
   const handlePlayerSelect = (playerId?: number) => {
     if (!scorerTeam || !selectedEvent || !match) return;
+
+    // For shots: go to outcome step first
+    if (selectedEvent === "shot") {
+      setPendingShooterId(playerId);
+      setStep("outcome");
+      return;
+    }
+
+    // All other events: submit immediately
     const teamId = scorerTeam === "home" ? match.homeTeamId : match.awayTeamId;
     createEvent.mutate(
-      {
-        teamId,
-        playerId,
-        type: selectedEvent,
+      { teamId, playerId, type: selectedEvent, time: timerSeconds, shotZone: selectedZone ?? undefined, actionType: selectedAction ?? undefined },
+      { onSuccess: () => closeScorer() }
+    );
+  };
+
+  const handleOutcomeSelect = (outcome: ShotOutcome) => {
+    if (!scorerTeam || !match) return;
+    setShotOutcome(outcome);
+
+    if (outcome === "saved" || outcome === "blocked") {
+      // First create the shot event, then pick the defending player
+      const attackingTeamId = scorerTeam === "home" ? match.homeTeamId : match.awayTeamId;
+      createEvent.mutate({
+        teamId: attackingTeamId,
+        playerId: pendingShooterId,
+        type: "shot",
         time: timerSeconds,
         shotZone: selectedZone ?? undefined,
         actionType: selectedAction ?? undefined,
-      },
+      });
+      setStep("second_player");
+    } else {
+      // post/missed — just record the shot
+      const teamId = scorerTeam === "home" ? match.homeTeamId : match.awayTeamId;
+      createEvent.mutate(
+        { teamId, playerId: pendingShooterId, type: "shot", time: timerSeconds, shotZone: selectedZone ?? undefined, actionType: selectedAction ?? undefined },
+        { onSuccess: () => closeScorer() }
+      );
+    }
+  };
+
+  const handleSecondPlayerSelect = (secondPlayerId?: number) => {
+    if (!scorerTeam || !match || !shotOutcome) return;
+    const defendingTeamId = scorerTeam === "home" ? match.awayTeamId : match.homeTeamId;
+    const eventType = shotOutcome === "saved" ? "save" : "block";
+    createEvent.mutate(
+      { teamId: defendingTeamId, playerId: secondPlayerId, type: eventType as EventType, time: timerSeconds },
       { onSuccess: () => closeScorer() }
     );
   };
@@ -353,6 +416,9 @@ export default function MatchDetails() {
 
   const scorerPlayers = scorerTeam === "home" ? (homePlayers ?? []) : (awayPlayers ?? []);
   const scorerTeamData = scorerTeam === "home" ? homeTeam : awayTeam;
+  // Opposing team's data (for saves/blocks)
+  const opposingPlayers = scorerTeam === "home" ? (awayPlayers ?? []) : (homePlayers ?? []);
+  const opposingTeamData = scorerTeam === "home" ? awayTeam : homeTeam;
 
   const selectedEventDef = EVENT_TYPES.find((e) => e.type === selectedEvent);
 
@@ -677,7 +743,7 @@ export default function MatchDetails() {
               </>
             )}
 
-            {/* Step 3: Player */}
+            {/* Step 3: Player (shooter) */}
             {step === "player" && (
               <>
                 {scorerPlayers.length === 0 ? (
@@ -725,6 +791,101 @@ export default function MatchDetails() {
                     </button>
                   </div>
                 )}
+              </>
+            )}
+
+            {/* Step 4: Shot Outcome */}
+            {step === "outcome" && (
+              <>
+                <p className="text-sm text-muted-foreground font-medium">{t("outcome.title")}:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {SHOT_OUTCOMES.map((oc) => (
+                    <button
+                      key={oc.id}
+                      onClick={() => handleOutcomeSelect(oc.id)}
+                      disabled={createEvent.isPending}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl font-bold text-sm transition-all active:scale-95",
+                        oc.color
+                      )}
+                      data-testid={`button-outcome-${oc.id}`}
+                    >
+                      <oc.icon className="w-6 h-6" />
+                      <span className="text-center leading-tight">{t(oc.labelKey)}</span>
+                      <span className="text-[10px] font-normal opacity-80 text-center leading-tight">{t(oc.descKey)}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Step 5: Pick defending player (GK save or blocker) */}
+            {step === "second_player" && (
+              <>
+                <div className="flex items-center gap-2 mb-1">
+                  <div
+                    className="w-4 h-4 rounded-full shrink-0"
+                    style={{ backgroundColor: opposingTeamData?.color }}
+                  />
+                  <p className="text-sm font-semibold text-foreground">
+                    {opposingTeamData?.name}
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {shotOutcome === "saved" ? t("outcome.selectGk") : t("outcome.selectBlocker")}
+                </p>
+
+                <div className="space-y-2 mt-2">
+                  {opposingPlayers
+                    .slice()
+                    .sort((a, b) => {
+                      // GK sort first when picking saves
+                      if (shotOutcome === "saved") {
+                        if (a.position === "GK" && b.position !== "GK") return -1;
+                        if (b.position === "GK" && a.position !== "GK") return 1;
+                      }
+                      return a.number - b.number;
+                    })
+                    .map((player) => (
+                      <button
+                        key={player.id}
+                        onClick={() => handleSecondPlayerSelect(player.id)}
+                        disabled={createEvent.isPending}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left active:scale-[0.98]",
+                          player.position === "GK" && shotOutcome === "saved"
+                            ? "bg-cyan-500/15 border border-cyan-500/40 hover:bg-cyan-500/25"
+                            : "bg-muted/30 hover:bg-muted"
+                        )}
+                        data-testid={`button-defender-${player.id}`}
+                      >
+                        <div className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center font-bold font-mono text-sm shrink-0 border",
+                          player.position === "GK" && shotOutcome === "saved"
+                            ? "bg-cyan-500 text-white border-cyan-400"
+                            : "bg-card border-border"
+                        )}>
+                          {player.number}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold truncate">{player.name}</div>
+                          <div className="text-xs text-muted-foreground">{player.position}</div>
+                        </div>
+                        {player.position === "GK" && shotOutcome === "saved" && (
+                          <Shield className="w-4 h-4 text-cyan-500 shrink-0" />
+                        )}
+                      </button>
+                    ))}
+
+                  <button
+                    onClick={() => handleSecondPlayerSelect(undefined)}
+                    disabled={createEvent.isPending}
+                    className="w-full p-3 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border rounded-xl transition-colors text-center"
+                    data-testid="button-skip-defender"
+                  >
+                    {t("outcome.skipDefender")}
+                  </button>
+                </div>
               </>
             )}
           </div>
