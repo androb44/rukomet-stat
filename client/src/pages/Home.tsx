@@ -5,8 +5,10 @@ import { PageHeader } from "@/components/PageHeader";
 import { Plus, Trophy, Calendar, Activity, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export default function Home() {
+  const t = useT();
   const { data: matches, isLoading: matchesLoading } = useQuery<any[]>({ queryKey: ["/api/matches"] });
   const { data: teams, isLoading: teamsLoading } = useQuery<any[]>({ queryKey: ["/api/teams"] });
 
@@ -17,8 +19,8 @@ export default function Home() {
   const recentMatches = matches?.filter((m) => m.status === "finished").slice(0, 3) ?? [];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <PageHeader title="Handball Stats" subtitle="Track your game" />
+    <div className="min-h-screen bg-background pb-28">
+      <PageHeader title={t("home.title")} subtitle={t("home.subtitle")} />
 
       <main className="max-w-lg mx-auto p-4 space-y-6">
         {loading ? (
@@ -39,8 +41,8 @@ export default function Home() {
                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-3">
                     <Plus className="w-5 h-5" />
                   </div>
-                  <h3 className="font-bold text-sm">New Match</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Schedule a game</p>
+                  <h3 className="font-bold text-sm">{t("home.newMatch")}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("home.scheduleGame")}</p>
                 </div>
               </Link>
               <Link href="/teams">
@@ -51,69 +53,57 @@ export default function Home() {
                   <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-600 mb-3">
                     <Trophy className="w-5 h-5" />
                   </div>
-                  <h3 className="font-bold text-sm">Manage Teams</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Rosters & Players</p>
+                  <h3 className="font-bold text-sm">{t("home.manageTeams")}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("home.rostersPlayers")}</p>
                 </div>
               </Link>
             </div>
 
-            {/* Live Matches */}
             {liveMatches.length > 0 && (
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <h2 className="font-bold">Live Now</h2>
+                  <h2 className="font-bold">{t("home.liveNow")}</h2>
                 </div>
-                {liveMatches.map((match: any) => (
-                  <MatchRow key={match.id} match={match} />
-                ))}
+                {liveMatches.map((match: any) => <MatchRow key={match.id} match={match} />)}
               </section>
             )}
 
-            {/* Upcoming Matches */}
             {upcomingMatches.length > 0 && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h2 className="font-bold flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    Upcoming
+                    {t("home.upcoming")}
                   </h2>
                   <Link href="/matches">
-                    <span className="text-xs text-primary font-medium">See all</span>
+                    <span className="text-xs text-primary font-medium">{t("home.seeAll")}</span>
                   </Link>
                 </div>
-                {upcomingMatches.map((match: any) => (
-                  <MatchRow key={match.id} match={match} />
-                ))}
+                {upcomingMatches.map((match: any) => <MatchRow key={match.id} match={match} />)}
               </section>
             )}
 
-            {/* Recent Results */}
             {recentMatches.length > 0 && (
               <section className="space-y-3">
                 <h2 className="font-bold flex items-center gap-2">
                   <Activity className="w-4 h-4 text-muted-foreground" />
-                  Recent Results
+                  {t("home.recentResults")}
                 </h2>
-                {recentMatches.map((match: any) => (
-                  <MatchRow key={match.id} match={match} />
-                ))}
+                {recentMatches.map((match: any) => <MatchRow key={match.id} match={match} />)}
               </section>
             )}
 
-            {/* Empty State */}
             {matches?.length === 0 && (
               <div className="text-center py-16">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <Trophy className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-bold">Welcome!</h3>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Start by creating teams, then schedule your first match.
-                </p>
+                <h3 className="text-lg font-bold">{t("home.welcome")}</h3>
+                <p className="text-muted-foreground mt-1 text-sm">{t("home.welcomeDesc")}</p>
                 <Link href="/teams">
                   <Button className="mt-4 rounded-full px-6" data-testid="button-create-team">
-                    Create Team
+                    {t("home.createTeam")}
                   </Button>
                 </Link>
               </div>
@@ -128,6 +118,7 @@ export default function Home() {
 function MatchRow({ match }: { match: any }) {
   const isLive = match.status === "in_progress";
   const isFinished = match.status === "finished";
+  const t = useT();
 
   return (
     <Link href={`/matches/${match.id}`}>
@@ -139,7 +130,6 @@ function MatchRow({ match }: { match: any }) {
         data-testid={`match-row-${match.id}`}
       >
         <div className="flex items-center gap-3">
-          {/* Home Team */}
           <div className="flex-1 flex items-center gap-2 min-w-0">
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
@@ -150,21 +140,16 @@ function MatchRow({ match }: { match: any }) {
             <span className="font-semibold text-sm truncate">{match.homeTeam?.name ?? "Home"}</span>
           </div>
 
-          {/* Score / Status */}
           <div className="flex flex-col items-center shrink-0 min-w-[64px] text-center">
             {isLive ? (
               <>
-                <div className="text-lg font-bold font-mono">
-                  {match.homeScore ?? 0} — {match.awayScore ?? 0}
-                </div>
-                <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">Live</span>
+                <div className="text-lg font-bold font-mono">{match.homeScore ?? 0} — {match.awayScore ?? 0}</div>
+                <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">{t("match.live")}</span>
               </>
             ) : isFinished ? (
               <>
-                <div className="text-lg font-bold font-mono">
-                  {match.homeScore ?? 0} — {match.awayScore ?? 0}
-                </div>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Final</span>
+                <div className="text-lg font-bold font-mono">{match.homeScore ?? 0} — {match.awayScore ?? 0}</div>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("match.final")}</span>
               </>
             ) : (
               <span className="text-xs text-muted-foreground font-medium">
@@ -173,7 +158,6 @@ function MatchRow({ match }: { match: any }) {
             )}
           </div>
 
-          {/* Away Team */}
           <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
             <span className="font-semibold text-sm truncate text-right">{match.awayTeam?.name ?? "Away"}</span>
             <div

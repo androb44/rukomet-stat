@@ -16,8 +16,10 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { Team } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useT } from "@/lib/i18n";
 
 export default function Matches() {
+  const t = useT();
   const { data: matches, isLoading: matchesLoading } = useQuery<any[]>({ queryKey: ["/api/matches"] });
   const { data: teams } = useQuery<Team[]>({ queryKey: ["/api/teams"] });
   const [open, setOpen] = useState(false);
@@ -27,10 +29,10 @@ export default function Matches() {
   const finished = matches?.filter((m) => m.status === "finished") ?? [];
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-28">
       <PageHeader
-        title="Matches"
-        subtitle="Schedule & Results"
+        title={t("matches.title")}
+        subtitle={t("matches.subtitle")}
         action={<CreateMatchDialog open={open} onOpenChange={setOpen} teams={teams ?? []} />}
       />
 
@@ -45,7 +47,7 @@ export default function Matches() {
               <section className="space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <h2 className="font-bold">Live</h2>
+                  <h2 className="font-bold">{t("matches.live")}</h2>
                 </div>
                 {live.map((m) => <MatchCard key={m.id} match={m} />)}
               </section>
@@ -53,14 +55,14 @@ export default function Matches() {
 
             {upcoming.length > 0 && (
               <section className="space-y-3">
-                <h2 className="font-bold text-muted-foreground text-sm uppercase tracking-wider">Upcoming</h2>
+                <h2 className="font-bold text-muted-foreground text-sm uppercase tracking-wider">{t("matches.upcoming")}</h2>
                 {upcoming.map((m) => <MatchCard key={m.id} match={m} />)}
               </section>
             )}
 
             {finished.length > 0 && (
               <section className="space-y-3">
-                <h2 className="font-bold text-muted-foreground text-sm uppercase tracking-wider">Results</h2>
+                <h2 className="font-bold text-muted-foreground text-sm uppercase tracking-wider">{t("matches.results")}</h2>
                 {finished.map((m) => <MatchCard key={m.id} match={m} />)}
               </section>
             )}
@@ -70,10 +72,10 @@ export default function Matches() {
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <Calendar className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-bold">No matches yet</h3>
-                <p className="text-sm text-muted-foreground mt-1">Schedule your first match.</p>
+                <h3 className="text-lg font-bold">{t("matches.noMatches")}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{t("matches.noMatchesDesc")}</p>
                 <Button className="mt-4 rounded-full px-6" onClick={() => setOpen(true)} data-testid="button-schedule-first">
-                  Schedule Match
+                  {t("matches.scheduleMatch")}
                 </Button>
               </div>
             )}
@@ -85,6 +87,7 @@ export default function Matches() {
 }
 
 function MatchCard({ match }: { match: any }) {
+  const t = useT();
   const isLive = match.status === "in_progress";
   const isFinished = match.status === "finished";
 
@@ -98,7 +101,6 @@ function MatchCard({ match }: { match: any }) {
         data-testid={`match-card-${match.id}`}
       >
         <div className="flex items-center gap-3">
-          {/* Home */}
           <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
@@ -109,21 +111,16 @@ function MatchCard({ match }: { match: any }) {
             <span className="text-xs font-medium truncate w-full text-center">{match.homeTeam?.name ?? "Home"}</span>
           </div>
 
-          {/* Score / Status */}
           <div className="flex flex-col items-center shrink-0 min-w-[80px] gap-1">
             {isLive ? (
               <>
-                <div className="text-xl font-bold font-mono">
-                  {match.homeScore ?? 0} – {match.awayScore ?? 0}
-                </div>
-                <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Live</span>
+                <div className="text-xl font-bold font-mono">{match.homeScore ?? 0} – {match.awayScore ?? 0}</div>
+                <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{t("match.live")}</span>
               </>
             ) : isFinished ? (
               <>
-                <div className="text-xl font-bold font-mono">
-                  {match.homeScore ?? 0} – {match.awayScore ?? 0}
-                </div>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Final</span>
+                <div className="text-xl font-bold font-mono">{match.homeScore ?? 0} – {match.awayScore ?? 0}</div>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("match.final")}</span>
               </>
             ) : (
               <span className="text-xs text-muted-foreground font-medium text-center">
@@ -132,7 +129,6 @@ function MatchCard({ match }: { match: any }) {
             )}
           </div>
 
-          {/* Away */}
           <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
@@ -150,15 +146,8 @@ function MatchCard({ match }: { match: any }) {
   );
 }
 
-function CreateMatchDialog({
-  open,
-  onOpenChange,
-  teams,
-}: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  teams: Team[];
-}) {
+function CreateMatchDialog({ open, onOpenChange, teams }: { open: boolean; onOpenChange: (o: boolean) => void; teams: Team[] }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -187,9 +176,9 @@ function CreateMatchDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
       onOpenChange(false);
       form.reset();
-      toast({ title: "Match scheduled!" });
+      toast({ title: t("matches.matchScheduled") });
     },
-    onError: () => toast({ title: "Failed to schedule match", variant: "destructive" }),
+    onError: () => toast({ title: t("matches.failSchedule"), variant: "destructive" }),
   });
 
   return (
@@ -201,7 +190,7 @@ function CreateMatchDialog({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Schedule Match</DialogTitle>
+          <DialogTitle>{t("matches.scheduleTitle")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit((d) => mutate(d))} className="space-y-4">
@@ -211,16 +200,16 @@ function CreateMatchDialog({
                 name="homeTeamId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Home Team</FormLabel>
+                    <FormLabel>{t("matches.homeTeam")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ? String(field.value) : ""}>
                       <FormControl>
                         <SelectTrigger className="rounded-xl" data-testid="select-home-team">
-                          <SelectValue placeholder="Select" />
+                          <SelectValue placeholder={t("matches.select")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {teams.map((t) => (
-                          <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={String(team.id)}>{team.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -233,16 +222,16 @@ function CreateMatchDialog({
                 name="awayTeamId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Away Team</FormLabel>
+                    <FormLabel>{t("matches.awayTeam")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ? String(field.value) : ""}>
                       <FormControl>
                         <SelectTrigger className="rounded-xl" data-testid="select-away-team">
-                          <SelectValue placeholder="Select" />
+                          <SelectValue placeholder={t("matches.select")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {teams.map((t) => (
-                          <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={String(team.id)}>{team.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -257,7 +246,7 @@ function CreateMatchDialog({
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Date & Time</FormLabel>
+                  <FormLabel>{t("matches.dateTime")}</FormLabel>
                   <FormControl>
                     <Input
                       type="datetime-local"
@@ -277,9 +266,9 @@ function CreateMatchDialog({
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
+                  <FormLabel>{t("matches.location")}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Stadium / Venue" className="rounded-xl" data-testid="input-match-location" {...field} />
+                    <Input placeholder={t("matches.stadium")} className="rounded-xl" data-testid="input-match-location" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -287,7 +276,7 @@ function CreateMatchDialog({
             />
 
             <Button type="submit" className="w-full rounded-xl" disabled={isPending} data-testid="button-submit-match">
-              {isPending ? "Scheduling..." : "Schedule Match"}
+              {isPending ? t("matches.scheduling") : t("matches.scheduleMatch")}
             </Button>
           </form>
         </Form>

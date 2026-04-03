@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { useLocation } from "wouter";
+import { LanguageProvider } from "@/lib/i18n";
 
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
@@ -33,9 +34,11 @@ function Router() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
-    </QueryClientProvider>
+    <LanguageProvider>
+      <QueryClientProvider client={queryClient}>
+        <Router />
+        <Toaster />
+      </QueryClientProvider>
+    </LanguageProvider>
   );
 }

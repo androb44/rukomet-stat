@@ -21,42 +21,40 @@ import {
 import { cn } from "@/lib/utils";
 import type { Team, Player } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useT } from "@/lib/i18n";
 
 const EVENT_TYPES = [
-  { type: "goal", label: "Goal", icon: Trophy, color: "bg-green-500 hover:bg-green-600 text-white" },
-  { type: "shot", label: "Shot", icon: Target, color: "bg-blue-500 hover:bg-blue-600 text-white" },
-  { type: "save", label: "Save", icon: Shield, color: "bg-cyan-500 hover:bg-cyan-600 text-white" },
-  { type: "assist", label: "Assist", icon: Zap, color: "bg-violet-500 hover:bg-violet-600 text-white" },
-  { type: "turnover", label: "Turnover", icon: RotateCcw, color: "bg-orange-500 hover:bg-orange-600 text-white" },
-  { type: "block", label: "Block", icon: Shield, color: "bg-teal-500 hover:bg-teal-600 text-white" },
-  { type: "yellow_card", label: "Yellow", icon: Square, color: "bg-yellow-400 hover:bg-yellow-500 text-black" },
-  { type: "2min", label: "2 Min", icon: Clock, color: "bg-zinc-700 hover:bg-zinc-800 text-white" },
-  { type: "red_card", label: "Red Card", icon: Square, color: "bg-red-600 hover:bg-red-700 text-white" },
+  { type: "goal",        labelKey: "event.goal",        icon: Trophy,        color: "bg-green-500 hover:bg-green-600 text-white" },
+  { type: "shot",        labelKey: "event.shot",        icon: Target,        color: "bg-blue-500 hover:bg-blue-600 text-white" },
+  { type: "save",        labelKey: "event.save",        icon: Shield,        color: "bg-cyan-500 hover:bg-cyan-600 text-white" },
+  { type: "assist",      labelKey: "event.assist",      icon: Zap,           color: "bg-violet-500 hover:bg-violet-600 text-white" },
+  { type: "turnover",    labelKey: "event.turnover",    icon: RotateCcw,     color: "bg-orange-500 hover:bg-orange-600 text-white" },
+  { type: "block",       labelKey: "event.block",       icon: Shield,        color: "bg-teal-500 hover:bg-teal-600 text-white" },
+  { type: "yellow_card", labelKey: "event.yellow_card", icon: Square,        color: "bg-yellow-400 hover:bg-yellow-500 text-black" },
+  { type: "2min",        labelKey: "event.2min",        icon: Clock,         color: "bg-zinc-700 hover:bg-zinc-800 text-white" },
+  { type: "red_card",    labelKey: "event.red_card",    icon: Square,        color: "bg-red-600 hover:bg-red-700 text-white" },
 ] as const;
 
 type EventType = typeof EVENT_TYPES[number]["type"];
 
 const SHOT_ZONES = [
-  { id: "left_wing",   label: "Lijevo krilo",  abbr: "L.Krilo", a1: -90, a2: -63 },
-  { id: "left_9m",     label: "Lijevo 9m",     abbr: "L 9m",    a1: -63, a2: -25 },
-  { id: "center_9m",   label: "Centar 9m",     abbr: "C 9m",    a1: -25, a2:  25 },
-  { id: "right_9m",    label: "Desno 9m",      abbr: "D 9m",    a1:  25, a2:  63 },
-  { id: "right_wing",  label: "Desno krilo",   abbr: "D.Krilo", a1:  63, a2:  90 },
-  { id: "pivot",       label: "Pivot / 6m",    abbr: "Pivot",   a1: -40, a2:  40, inner: true },
-  { id: "penalty_7m",  label: "7m kazneni",    abbr: "7m",      special: "circle" as const },
+  { id: "left_wing",   labelKey: "zone.left_wing",   abbr: "L.Krilo", a1: -90, a2: -63 },
+  { id: "left_9m",     labelKey: "zone.left_9m",     abbr: "L 9m",    a1: -63, a2: -25 },
+  { id: "center_9m",   labelKey: "zone.center_9m",   abbr: "C 9m",    a1: -25, a2:  25 },
+  { id: "right_9m",    labelKey: "zone.right_9m",    abbr: "D 9m",    a1:  25, a2:  63 },
+  { id: "right_wing",  labelKey: "zone.right_wing",  abbr: "D.Krilo", a1:  63, a2:  90 },
+  { id: "pivot",       labelKey: "zone.pivot",       abbr: "Pivot",   a1: -40, a2:  40, inner: true },
+  { id: "penalty_7m",  labelKey: "zone.penalty_7m",  abbr: "7m",      special: "circle" as const },
 ];
 
 const ACTION_TYPES = [
-  { id: "set_play",     label: "Pozicioni napad" },
-  { id: "counter",      label: "Kontranapag" },
-  { id: "fast_break",   label: "Brzi napad / 2. val" },
-  { id: "breakthrough", label: "Proboj" },
-  { id: "free_throw",   label: "Slobodan udarac" },
-  { id: "penalty_7m",   label: "7m kazneni" },
+  { id: "set_play",     labelKey: "action.set_play" },
+  { id: "counter",      labelKey: "action.counter" },
+  { id: "fast_break",   labelKey: "action.fast_break" },
+  { id: "breakthrough", labelKey: "action.breakthrough" },
+  { id: "free_throw",   labelKey: "action.free_throw" },
+  { id: "penalty_7m",   labelKey: "action.penalty_7m" },
 ];
-
-const ZONE_LABEL: Record<string, string> = Object.fromEntries(SHOT_ZONES.map((z) => [z.id, z.label]));
-const ACTION_LABEL: Record<string, string> = Object.fromEntries(ACTION_TYPES.map((a) => [a.id, a.label]));
 
 // --- SVG Court helpers ---
 const CX = 150, CY = 200, R6 = 60, R9 = 90, R7 = 70, R_BIG = 230;
@@ -101,40 +99,31 @@ const ZONE_PATHS = SHOT_ZONES.filter((z) => !z.special).map((z) => ({
   fillSelected: z.inner ? "#d97706" : z.id.includes("wing") ? "#ea580c" : "#2563eb",
 }));
 
-// 7m circle zone
 const PENALTY_POS = { x: CX, y: CY - R7 };
 
 function HandballCourt({ selected, onSelect }: { selected: string | null; onSelect: (id: string) => void }) {
   return (
-    <svg viewBox="0 0 300 220" className="w-full" style={{ touchAction: "none" }}>
-      {/* Court background */}
+    <svg
+      viewBox="0 0 300 220"
+      className="w-full touch-manipulation"
+      style={{ WebkitTapHighlightColor: "transparent" }}
+    >
       <rect x="0" y="0" width="300" height="220" fill="#1e293b" rx="12" />
-
-      {/* Grass/floor */}
       <rect x="20" y="20" width="260" height="195" fill="#166534" rx="8" />
-
-      {/* Goal area decorative */}
       <rect x="122" y="190" width="56" height="14" fill="#dc2626" rx="2" />
       <rect x="122" y="184" width="4" height="20" fill="#f87171" />
       <rect x="174" y="184" width="4" height="20" fill="#f87171" />
       <rect x="122" y="184" width="56" height="3" fill="#f87171" />
-
-      {/* 6m arc */}
       <path
         d={`M ${ptX(R6, -90).toFixed(1)},${ptY(R6, -90).toFixed(1)} A ${R6},${R6} 0 0 1 ${ptX(R6, 90).toFixed(1)},${ptY(R6, 90).toFixed(1)}`}
         fill="none" stroke="#4ade80" strokeWidth="1.5"
       />
-
-      {/* 9m dashed arc */}
       <path
         d={`M ${ptX(R9, -90).toFixed(1)},${ptY(R9, -90).toFixed(1)} A ${R9},${R9} 0 0 1 ${ptX(R9, 90).toFixed(1)},${ptY(R9, 90).toFixed(1)}`}
         fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="6,4"
       />
-
-      {/* 7m mark */}
       <line x1={PENALTY_POS.x - 6} y1={PENALTY_POS.y} x2={PENALTY_POS.x + 6} y2={PENALTY_POS.y} stroke="#94a3b8" strokeWidth="1.5" />
 
-      {/* Clickable zone sectors */}
       {ZONE_PATHS.map((z) => {
         const isSelected = selected === z.id;
         return (
@@ -162,10 +151,9 @@ function HandballCourt({ selected, onSelect }: { selected: string | null; onSele
         );
       })}
 
-      {/* 7m penalty clickable circle */}
       <g onClick={() => onSelect("penalty_7m")} style={{ cursor: "pointer" }}>
         <circle
-          cx={PENALTY_POS.x} cy={PENALTY_POS.y} r="16"
+          cx={PENALTY_POS.x} cy={PENALTY_POS.y} r="18"
           fill={selected === "penalty_7m" ? "#dc2626" : "#ef4444"}
           fillOpacity={selected === "penalty_7m" ? 0.9 : 0.5}
           stroke={selected === "penalty_7m" ? "#fff" : "rgba(255,255,255,0.3)"}
@@ -182,10 +170,9 @@ function HandballCourt({ selected, onSelect }: { selected: string | null; onSele
         </text>
       </g>
 
-      {/* Selected zone label at top */}
       {selected && (
-        <text x="150" y="12" textAnchor="middle" fontSize="9" fill="#94a3b8" fontWeight="500">
-          {ZONE_LABEL[selected] ?? selected}
+        <text x="150" y="12" textAnchor="middle" fontSize="9" fill="#4ade80" fontWeight="600">
+          ✓ {selected.replace(/_/g, " ")}
         </text>
       )}
     </svg>
@@ -195,6 +182,7 @@ function HandballCourt({ selected, onSelect }: { selected: string | null; onSele
 const NEEDS_ZONE = new Set<EventType>(["goal", "shot"]);
 
 export default function MatchDetails() {
+  const t = useT();
   const { id } = useParams();
   const matchId = Number(id);
   const queryClient = useQueryClient();
@@ -263,9 +251,9 @@ export default function MatchDetails() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/matches", matchId] });
-      toast({ title: "Event recorded" });
+      toast({ title: t("match.eventRecorded") });
     },
-    onError: () => toast({ title: "Failed to record event", variant: "destructive" }),
+    onError: () => toast({ title: t("match.failEvent"), variant: "destructive" }),
   });
 
   // Timer
@@ -288,7 +276,6 @@ export default function MatchDetails() {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
-  // step: 'event' → 'zone_action' (only for goal/shot) → 'player'
   const [step, setStep] = useState<"event" | "zone_action" | "player">("event");
 
   const openScorer = (side: "home" | "away") => {
@@ -354,7 +341,7 @@ export default function MatchDetails() {
   if (isLoading || !match) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading match...</p>
+        <p className="text-muted-foreground">{t("common.loading")}</p>
       </div>
     );
   }
@@ -372,12 +359,12 @@ export default function MatchDetails() {
     exportMatchPdf(match, homePlayers ?? [], awayPlayers ?? []);
   };
 
-  const canProceedToPlayer = !NEEDS_ZONE.has(selectedEvent!) || (selectedZone !== null);
+  const selectedEventDef = EVENT_TYPES.find((e) => e.type === selectedEvent);
 
   return (
     <div className="min-h-screen bg-background">
       <PageHeader
-        title="Match"
+        title={t("match.title")}
         backTo="/matches"
         action={
           <Button
@@ -411,13 +398,13 @@ export default function MatchDetails() {
             <div className="flex flex-col items-center gap-2 shrink-0">
               <span className="text-2xl font-bold opacity-30">:</span>
               {isLive && (
-                <span className="text-xs font-bold text-red-400 uppercase tracking-widest animate-pulse">Live</span>
+                <span className="text-xs font-bold text-red-400 uppercase tracking-widest animate-pulse">{t("match.live")}</span>
               )}
               {isFinished && (
-                <span className="text-xs text-zinc-400 uppercase tracking-wider">Final</span>
+                <span className="text-xs text-zinc-400 uppercase tracking-wider">{t("match.final")}</span>
               )}
               {match.status === "scheduled" && (
-                <span className="text-xs text-zinc-400 uppercase tracking-wider">Soon</span>
+                <span className="text-xs text-zinc-400 uppercase tracking-wider">{t("match.soon")}</span>
               )}
             </div>
 
@@ -446,7 +433,7 @@ export default function MatchDetails() {
                   onClick={() => setTimerRunning((r) => !r)}
                   data-testid="button-timer-toggle"
                 >
-                  {timerRunning ? "Pause" : "Resume"}
+                  {timerRunning ? t("match.pause") : t("match.resume")}
                 </Button>
                 <Button
                   size="sm"
@@ -467,7 +454,7 @@ export default function MatchDetails() {
                 disabled={updateStatus.isPending}
                 data-testid="button-start-match"
               >
-                <Play className="w-4 h-4 mr-2" /> Start Match
+                <Play className="w-4 h-4 mr-2" /> {t("match.startMatch")}
               </Button>
             )}
 
@@ -480,7 +467,7 @@ export default function MatchDetails() {
                 disabled={updateStatus.isPending}
                 data-testid="button-end-match"
               >
-                End Match
+                {t("match.endMatch")}
               </Button>
             )}
           </div>
@@ -499,7 +486,7 @@ export default function MatchDetails() {
               data-testid="button-home-action"
             >
               <div className="w-5 h-5 rounded-full" style={{ backgroundColor: homeTeam.color }} />
-              {homeTeam.shortName} Akcija
+              {homeTeam.shortName} {t("match.action")}
             </Button>
             <Button
               variant="outline"
@@ -509,7 +496,7 @@ export default function MatchDetails() {
               data-testid="button-away-action"
             >
               <div className="w-5 h-5 rounded-full" style={{ backgroundColor: awayTeam.color }} />
-              {awayTeam.shortName} Akcija
+              {awayTeam.shortName} {t("match.action")}
             </Button>
           </div>
         )}
@@ -517,12 +504,12 @@ export default function MatchDetails() {
         {/* Event Log */}
         <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border/50 bg-muted/20">
-            <h3 className="font-bold text-sm">Tok utakmice</h3>
+            <h3 className="font-bold text-sm">{t("match.events")}</h3>
           </div>
           <div className="divide-y divide-border/30 max-h-96 overflow-y-auto">
             {(!match.events || match.events.length === 0) && (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                Nema zabilježenih akcija.
+                {t("match.noEvents")}
               </div>
             )}
             {match.events?.map((event: any) => {
@@ -530,6 +517,8 @@ export default function MatchDetails() {
               const players = isHome ? homePlayers : awayPlayers;
               const player = players?.find((p) => p.id === event.playerId);
               const evtDef = EVENT_TYPES.find((e) => e.type === event.type);
+              const zoneLabel = SHOT_ZONES.find((z) => z.id === event.shotZone);
+              const actionLabel = ACTION_TYPES.find((a) => a.id === event.actionType);
 
               return (
                 <div
@@ -542,13 +531,18 @@ export default function MatchDetails() {
                     style={{ backgroundColor: isHome ? homeTeam.color : awayTeam.color }}
                   />
                   <div className={cn("flex-1 min-w-0", !isHome && "text-right")}>
-                    <div className="font-semibold text-sm">{evtDef?.label ?? event.type}</div>
+                    <div className="font-semibold text-sm">
+                      {evtDef ? t(evtDef.labelKey) : event.type}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {player ? `#${player.number} ${player.name}` : isHome ? homeTeam.name : awayTeam.name}
                     </div>
                     {(event.shotZone || event.actionType) && (
                       <div className="text-xs text-muted-foreground/70 mt-0.5">
-                        {[ZONE_LABEL[event.shotZone], ACTION_LABEL[event.actionType]]
+                        {[
+                          zoneLabel ? t(zoneLabel.labelKey) : null,
+                          actionLabel ? t(actionLabel.labelKey) : null,
+                        ]
                           .filter(Boolean)
                           .join(" · ")}
                       </div>
@@ -572,10 +566,10 @@ export default function MatchDetails() {
         <button
           onClick={handleExportPdf}
           className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-dashed border-primary/30 text-primary font-semibold text-sm hover:bg-primary/5 transition-colors active:scale-[0.98]"
-          data-testid="button-export-pdf"
+          data-testid="button-export-pdf-bottom"
         >
           <FileDown className="w-5 h-5" />
-          Export Match Report as PDF
+          {t("match.exportPdf")}
         </button>
       </main>
 
@@ -592,7 +586,7 @@ export default function MatchDetails() {
                   data-testid="button-back-event"
                 >
                   <ChevronLeft className="w-5 h-5" />
-                  <span className="font-normal text-sm">Nazad</span>
+                  <span className="font-normal text-sm">{t("match.back")}</span>
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
@@ -602,13 +596,9 @@ export default function MatchDetails() {
               )}
             </SheetTitle>
 
-            {/* Step pills */}
-            {selectedEvent && (
-              <span className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-bold",
-                EVENT_TYPES.find((e) => e.type === selectedEvent)?.color
-              )}>
-                {EVENT_TYPES.find((e) => e.type === selectedEvent)?.label}
+            {selectedEventDef && (
+              <span className={cn("px-2.5 py-1 rounded-lg text-xs font-bold", selectedEventDef.color)}>
+                {t(selectedEventDef.labelKey)}
               </span>
             )}
 
@@ -625,7 +615,7 @@ export default function MatchDetails() {
             {/* Step 1: Event Type */}
             {step === "event" && (
               <>
-                <p className="text-sm text-muted-foreground font-medium">Odaberi tip akcije:</p>
+                <p className="text-sm text-muted-foreground font-medium">{t("match.selectEvent")}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {EVENT_TYPES.map((evt) => (
                     <button
@@ -638,27 +628,28 @@ export default function MatchDetails() {
                       data-testid={`button-event-${evt.type}`}
                     >
                       <evt.icon className="w-5 h-5" />
-                      {evt.label}
+                      {t(evt.labelKey)}
                     </button>
                   ))}
                 </div>
               </>
             )}
 
-            {/* Step 2: Zone + Action (only for goal/shot) */}
+            {/* Step 2: Zone + Action */}
             {step === "zone_action" && (
               <>
-                {/* Court map */}
                 <div>
                   <p className="text-sm text-muted-foreground font-medium mb-2">
-                    Odaberi zonu šuta — tapni na terenu:
+                    {t("match.selectZone")}
                   </p>
-                  <HandballCourt selected={selectedZone} onSelect={setSelectedZone} />
+                  <HandballCourt selected={selectedZone} onSelect={(id) => setSelectedZone(id === selectedZone ? null : id)} />
+                  {!selectedZone && (
+                    <p className="text-xs text-center text-muted-foreground mt-1">{t("match.tapZone")}</p>
+                  )}
                 </div>
 
-                {/* Action type */}
                 <div>
-                  <p className="text-sm text-muted-foreground font-medium mb-2">Tip akcije:</p>
+                  <p className="text-sm text-muted-foreground font-medium mb-2">{t("match.selectAction")}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {ACTION_TYPES.map((act) => (
                       <button
@@ -672,24 +663,20 @@ export default function MatchDetails() {
                         )}
                         data-testid={`button-action-${act.id}`}
                       >
-                        {act.label}
+                        {t(act.labelKey)}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Next button */}
+                {/* Next button — always enabled: zone is optional */}
                 <Button
                   className="w-full rounded-xl"
-                  disabled={!canProceedToPlayer}
                   onClick={() => setStep("player")}
                   data-testid="button-next-to-player"
                 >
-                  Odaberi igrača →
+                  {t("match.selectPlayer")}
                 </Button>
-                {!selectedZone && (
-                  <p className="text-xs text-center text-muted-foreground">Tapni zonu na terenu da nastaviš</p>
-                )}
               </>
             )}
 
@@ -698,14 +685,14 @@ export default function MatchDetails() {
               <>
                 {scorerPlayers.length === 0 ? (
                   <div className="text-center py-6 text-sm text-muted-foreground">
-                    Nema igrača u timu.
+                    {t("match.noPlayers")}
                     <br />
                     <button
                       onClick={() => handlePlayerSelect(undefined)}
                       className="text-primary font-medium mt-2 hover:underline"
                       data-testid="button-no-player"
                     >
-                      Zabilježi bez igrača
+                      {t("match.recordNoPlayer")}
                     </button>
                   </div>
                 ) : (
@@ -737,7 +724,7 @@ export default function MatchDetails() {
                       className="w-full p-3 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border rounded-xl transition-colors text-center"
                       data-testid="button-team-event"
                     >
-                      Zabilježi kao timsku akciju (bez igrača)
+                      {t("match.teamEvent")}
                     </button>
                   </div>
                 )}
@@ -751,6 +738,7 @@ export default function MatchDetails() {
 }
 
 function StatsSummary({ events, homeTeam, awayTeam }: { events: any[]; homeTeam: Team; awayTeam: Team }) {
+  const t = useT();
   const stats = ["goal", "shot", "save", "assist", "turnover", "block", "yellow_card", "2min", "red_card"];
   const count = (teamId: number, type: string) =>
     events.filter((e) => e.teamId === teamId && e.type === type).length;
@@ -758,14 +746,15 @@ function StatsSummary({ events, homeTeam, awayTeam }: { events: any[]; homeTeam:
   return (
     <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
       <div className="px-4 py-3 border-b border-border/50 bg-muted/20">
-        <h3 className="font-bold text-sm">Statistika</h3>
+        <h3 className="font-bold text-sm">{t("match.stats")}</h3>
       </div>
       <div className="divide-y divide-border/20">
         {stats.map((stat) => {
           const homeCount = count(homeTeam.id, stat);
           const awayCount = count(awayTeam.id, stat);
           if (homeCount === 0 && awayCount === 0) return null;
-          const label = EVENT_TYPES.find((e) => e.type === stat)?.label ?? stat;
+          const evtDef = EVENT_TYPES.find((e) => e.type === stat);
+          const label = evtDef ? t(evtDef.labelKey) : stat;
           const total = homeCount + awayCount;
           return (
             <div key={stat} className="px-4 py-3">

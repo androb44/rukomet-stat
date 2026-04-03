@@ -12,16 +12,18 @@ import { insertTeamSchema } from "@shared/schema";
 import { Plus, Users, ChevronRight } from "lucide-react";
 import type { InsertTeam, Team } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useT } from "@/lib/i18n";
 
 export default function Teams() {
+  const t = useT();
   const { data: teams, isLoading } = useQuery<Team[]>({ queryKey: ["/api/teams"] });
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-28">
       <PageHeader
-        title="Teams"
-        subtitle="Manage rosters"
+        title={t("teams.title")}
+        subtitle={t("teams.subtitle")}
         action={<CreateTeamDialog open={open} onOpenChange={setOpen} />}
       />
 
@@ -48,7 +50,7 @@ export default function Teams() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold truncate">{team.name}</h3>
-                    <p className="text-xs text-muted-foreground">View roster</p>
+                    <p className="text-xs text-muted-foreground">{t("teams.viewRoster")}</p>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
                 </div>
@@ -60,10 +62,10 @@ export default function Teams() {
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-bold">No teams yet</h3>
-                <p className="text-muted-foreground text-sm mt-1">Create your first team to get started.</p>
+                <h3 className="text-lg font-bold">{t("teams.noTeams")}</h3>
+                <p className="text-muted-foreground text-sm mt-1">{t("teams.noTeamsDesc")}</p>
                 <Button className="mt-4 rounded-full px-6" onClick={() => setOpen(true)} data-testid="button-create-first-team">
-                  Create Team
+                  {t("teams.createTeam")}
                 </Button>
               </div>
             )}
@@ -75,6 +77,7 @@ export default function Teams() {
 }
 
 function CreateTeamDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const t = useT();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -92,9 +95,9 @@ function CreateTeamDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
       queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
       onOpenChange(false);
       form.reset();
-      toast({ title: "Team created!" });
+      toast({ title: t("teams.teamCreated") });
     },
-    onError: () => toast({ title: "Failed to create team", variant: "destructive" }),
+    onError: () => toast({ title: t("teams.failCreate"), variant: "destructive" }),
   });
 
   const form = useForm<InsertTeam>({
@@ -111,7 +114,7 @@ function CreateTeamDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
       </DialogTrigger>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Create Team</DialogTitle>
+          <DialogTitle>{t("teams.createTeamTitle")}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit((d) => mutate(d))} className="space-y-4">
@@ -120,7 +123,7 @@ function CreateTeamDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Team Name</FormLabel>
+                  <FormLabel>{t("teams.teamName")}</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. Denmark" className="rounded-xl" data-testid="input-team-name" {...field} />
                   </FormControl>
@@ -134,7 +137,7 @@ function CreateTeamDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
                 name="shortName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Short Name</FormLabel>
+                    <FormLabel>{t("teams.shortName")}</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="DEN"
@@ -154,15 +157,10 @@ function CreateTeamDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
                 name="color"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Color</FormLabel>
+                    <FormLabel>{t("teams.color")}</FormLabel>
                     <FormControl>
                       <div className="flex gap-2 items-center">
-                        <Input
-                          type="color"
-                          className="w-12 h-10 p-1 rounded-xl cursor-pointer"
-                          data-testid="input-team-color"
-                          {...field}
-                        />
+                        <Input type="color" className="w-12 h-10 p-1 rounded-xl cursor-pointer" data-testid="input-team-color" {...field} />
                         <Input className="flex-1 rounded-xl font-mono text-sm" {...field} />
                       </div>
                     </FormControl>
@@ -172,7 +170,7 @@ function CreateTeamDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
               />
             </div>
             <Button type="submit" className="w-full rounded-xl" disabled={isPending} data-testid="button-submit-team">
-              {isPending ? "Creating..." : "Create Team"}
+              {isPending ? t("teams.creating") : t("teams.createTeam")}
             </Button>
           </form>
         </Form>
