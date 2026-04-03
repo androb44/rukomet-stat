@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { createServer } from "http";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { db } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -59,6 +61,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    await migrate(db, { migrationsFolder: "./migrations" });
+  } catch (err) {
+    console.error("Migration error (non-fatal):", err);
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
