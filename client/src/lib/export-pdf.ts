@@ -62,11 +62,25 @@ function getTeamStats(events: MatchEvent[], teamId: number): Record<string, numb
   return stats;
 }
 
-export function exportMatchPdf(
+/** Returns a Blob of the generated PDF (for inline preview) */
+export function buildPdfBlob(
   match: MatchWithTeams,
   homePlayers: Player[],
   awayPlayers: Player[]
-): void {
+): { blob: Blob; filename: string } {
+  const result = buildPdfDoc(match, homePlayers, awayPlayers);
+  return {
+    blob: result.doc.output("blob"),
+    filename: result.filename,
+  };
+}
+
+/** @internal */
+function buildPdfDoc(
+  match: MatchWithTeams,
+  homePlayers: Player[],
+  awayPlayers: Player[]
+): { doc: jsPDF; filename: string } {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 14;
@@ -376,7 +390,15 @@ export function exportMatchPdf(
     );
   }
 
-  // ── SAVE ────────────────────────────────────────────────────────────
   const filename = `Match_${match.homeTeam.shortName}_vs_${match.awayTeam.shortName}_${format(new Date(match.date), "yyyyMMdd")}.pdf`;
+  return { doc, filename };
+}
+
+export function exportMatchPdf(
+  match: MatchWithTeams,
+  homePlayers: Player[],
+  awayPlayers: Player[]
+): void {
+  const { doc, filename } = buildPdfDoc(match, homePlayers, awayPlayers);
   doc.save(filename);
 }
