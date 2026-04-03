@@ -33,9 +33,11 @@ export const matchEvents = pgTable("match_events", {
   id: serial("id").primaryKey(),
   matchId: integer("match_id").notNull(),
   teamId: integer("team_id").notNull(),
-  playerId: integer("player_id"), // Nullable for team events like timeouts
-  type: text("type").notNull(), // goal, miss, save, turnover, yellow_card, 2min, red_card, timeout
-  time: integer("time").notNull(), // Seconds from start
+  playerId: integer("player_id"),
+  type: text("type").notNull(),
+  time: integer("time").notNull(),
+  shotZone: text("shot_zone"),   // left_wing, right_wing, left_9m, center_9m, right_9m, pivot, penalty_7m
+  actionType: text("action_type"), // set_play, counter, fast_break, breakthrough, free_throw, penalty_7m
 });
 
 // Relations

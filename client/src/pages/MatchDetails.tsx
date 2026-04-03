@@ -3,7 +3,7 @@ import { useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
   Play,
   Square,
@@ -35,6 +35,164 @@ const EVENT_TYPES = [
 ] as const;
 
 type EventType = typeof EVENT_TYPES[number]["type"];
+
+const SHOT_ZONES = [
+  { id: "left_wing",   label: "Lijevo krilo",  abbr: "L.Krilo", a1: -90, a2: -63 },
+  { id: "left_9m",     label: "Lijevo 9m",     abbr: "L 9m",    a1: -63, a2: -25 },
+  { id: "center_9m",   label: "Centar 9m",     abbr: "C 9m",    a1: -25, a2:  25 },
+  { id: "right_9m",    label: "Desno 9m",      abbr: "D 9m",    a1:  25, a2:  63 },
+  { id: "right_wing",  label: "Desno krilo",   abbr: "D.Krilo", a1:  63, a2:  90 },
+  { id: "pivot",       label: "Pivot / 6m",    abbr: "Pivot",   a1: -40, a2:  40, inner: true },
+  { id: "penalty_7m",  label: "7m kazneni",    abbr: "7m",      special: "circle" as const },
+];
+
+const ACTION_TYPES = [
+  { id: "set_play",     label: "Pozicioni napad" },
+  { id: "counter",      label: "Kontranapag" },
+  { id: "fast_break",   label: "Brzi napad / 2. val" },
+  { id: "breakthrough", label: "Proboj" },
+  { id: "free_throw",   label: "Slobodan udarac" },
+  { id: "penalty_7m",   label: "7m kazneni" },
+];
+
+const ZONE_LABEL: Record<string, string> = Object.fromEntries(SHOT_ZONES.map((z) => [z.id, z.label]));
+const ACTION_LABEL: Record<string, string> = Object.fromEntries(ACTION_TYPES.map((a) => [a.id, a.label]));
+
+// --- SVG Court helpers ---
+const CX = 150, CY = 200, R6 = 60, R9 = 90, R7 = 70, R_BIG = 230;
+
+function toRad(deg: number) { return (deg - 90) * (Math.PI / 180); }
+function ptX(r: number, deg: number) { return CX + r * Math.cos(toRad(deg)); }
+function ptY(r: number, deg: number) { return CY + r * Math.sin(toRad(deg)); }
+
+function makeSectorPath(r1: number, r2: number, a1: number, a2: number): string {
+  const ix1 = ptX(r1, a1), iy1 = ptY(r1, a1);
+  const ox1 = ptX(r2, a1), oy1 = ptY(r2, a1);
+  const ox2 = ptX(r2, a2), oy2 = ptY(r2, a2);
+  const ix2 = ptX(r1, a2), iy2 = ptY(r1, a2);
+  const large = (a2 - a1) > 180 ? 1 : 0;
+  return [
+    `M ${ix1.toFixed(1)},${iy1.toFixed(1)}`,
+    `L ${ox1.toFixed(1)},${oy1.toFixed(1)}`,
+    `A ${r2},${r2} 0 ${large} 1 ${ox2.toFixed(1)},${oy2.toFixed(1)}`,
+    `L ${ix2.toFixed(1)},${iy2.toFixed(1)}`,
+    `A ${r1},${r1} 0 ${large} 0 ${ix1.toFixed(1)},${iy1.toFixed(1)} Z`,
+  ].join(" ");
+}
+
+function labelPos(r1: number, r2: number, a1: number, a2: number) {
+  const midA = (a1 + a2) / 2;
+  const midR = Math.min((r1 + r2) / 2, r1 + 28);
+  return { x: ptX(midR, midA), y: ptY(midR, midA) };
+}
+
+const ZONE_PATHS = SHOT_ZONES.filter((z) => !z.special).map((z) => ({
+  id: z.id,
+  abbr: z.abbr,
+  path: z.inner
+    ? makeSectorPath(R6, R9, z.a1!, z.a2!)
+    : makeSectorPath(R9, R_BIG, z.a1!, z.a2!),
+  label: labelPos(
+    z.inner ? R6 : R9,
+    z.inner ? R9 : R9 + 28,
+    z.a1!, z.a2!
+  ),
+  fill: z.inner ? "#fbbf24" : z.id.includes("wing") ? "#f97316" : "#60a5fa",
+  fillSelected: z.inner ? "#d97706" : z.id.includes("wing") ? "#ea580c" : "#2563eb",
+}));
+
+// 7m circle zone
+const PENALTY_POS = { x: CX, y: CY - R7 };
+
+function HandballCourt({ selected, onSelect }: { selected: string | null; onSelect: (id: string) => void }) {
+  return (
+    <svg viewBox="0 0 300 220" className="w-full" style={{ touchAction: "none" }}>
+      {/* Court background */}
+      <rect x="0" y="0" width="300" height="220" fill="#1e293b" rx="12" />
+
+      {/* Grass/floor */}
+      <rect x="20" y="20" width="260" height="195" fill="#166534" rx="8" />
+
+      {/* Goal area decorative */}
+      <rect x="122" y="190" width="56" height="14" fill="#dc2626" rx="2" />
+      <rect x="122" y="184" width="4" height="20" fill="#f87171" />
+      <rect x="174" y="184" width="4" height="20" fill="#f87171" />
+      <rect x="122" y="184" width="56" height="3" fill="#f87171" />
+
+      {/* 6m arc */}
+      <path
+        d={`M ${ptX(R6, -90).toFixed(1)},${ptY(R6, -90).toFixed(1)} A ${R6},${R6} 0 0 1 ${ptX(R6, 90).toFixed(1)},${ptY(R6, 90).toFixed(1)}`}
+        fill="none" stroke="#4ade80" strokeWidth="1.5"
+      />
+
+      {/* 9m dashed arc */}
+      <path
+        d={`M ${ptX(R9, -90).toFixed(1)},${ptY(R9, -90).toFixed(1)} A ${R9},${R9} 0 0 1 ${ptX(R9, 90).toFixed(1)},${ptY(R9, 90).toFixed(1)}`}
+        fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="6,4"
+      />
+
+      {/* 7m mark */}
+      <line x1={PENALTY_POS.x - 6} y1={PENALTY_POS.y} x2={PENALTY_POS.x + 6} y2={PENALTY_POS.y} stroke="#94a3b8" strokeWidth="1.5" />
+
+      {/* Clickable zone sectors */}
+      {ZONE_PATHS.map((z) => {
+        const isSelected = selected === z.id;
+        return (
+          <g key={z.id} onClick={() => onSelect(z.id)} style={{ cursor: "pointer" }}>
+            <path
+              d={z.path}
+              fill={isSelected ? z.fillSelected : z.fill}
+              fillOpacity={isSelected ? 0.85 : 0.45}
+              stroke={isSelected ? "#fff" : "rgba(255,255,255,0.2)"}
+              strokeWidth={isSelected ? 1.5 : 0.8}
+            />
+            <text
+              x={z.label.x}
+              y={z.label.y}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize="8.5"
+              fontWeight={isSelected ? "700" : "600"}
+              fill={isSelected ? "#fff" : "rgba(255,255,255,0.85)"}
+              style={{ pointerEvents: "none", userSelect: "none" }}
+            >
+              {z.abbr}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* 7m penalty clickable circle */}
+      <g onClick={() => onSelect("penalty_7m")} style={{ cursor: "pointer" }}>
+        <circle
+          cx={PENALTY_POS.x} cy={PENALTY_POS.y} r="16"
+          fill={selected === "penalty_7m" ? "#dc2626" : "#ef4444"}
+          fillOpacity={selected === "penalty_7m" ? 0.9 : 0.5}
+          stroke={selected === "penalty_7m" ? "#fff" : "rgba(255,255,255,0.3)"}
+          strokeWidth={selected === "penalty_7m" ? 1.5 : 0.8}
+        />
+        <text
+          x={PENALTY_POS.x} y={PENALTY_POS.y}
+          textAnchor="middle" dominantBaseline="central"
+          fontSize="8" fontWeight="700"
+          fill="white"
+          style={{ pointerEvents: "none", userSelect: "none" }}
+        >
+          7m
+        </text>
+      </g>
+
+      {/* Selected zone label at top */}
+      {selected && (
+        <text x="150" y="12" textAnchor="middle" fontSize="9" fill="#94a3b8" fontWeight="500">
+          {ZONE_LABEL[selected] ?? selected}
+        </text>
+      )}
+    </svg>
+  );
+}
+
+const NEEDS_ZONE = new Set<EventType>(["goal", "shot"]);
 
 export default function MatchDetails() {
   const { id } = useParams();
@@ -87,7 +245,14 @@ export default function MatchDetails() {
   });
 
   const createEvent = useMutation({
-    mutationFn: async (data: { teamId: number; playerId?: number; type: EventType; time: number }) => {
+    mutationFn: async (data: {
+      teamId: number;
+      playerId?: number;
+      type: EventType;
+      time: number;
+      shotZone?: string;
+      actionType?: string;
+    }) => {
       const res = await fetch("/api/match-events", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,14 +282,21 @@ export default function MatchDetails() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [timerRunning]);
 
-  // Scorer Sheet state
+  // Sheet state
   const [scorerOpen, setScorerOpen] = useState(false);
   const [scorerTeam, setScorerTeam] = useState<"home" | "away" | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  // step: 'event' → 'zone_action' (only for goal/shot) → 'player'
+  const [step, setStep] = useState<"event" | "zone_action" | "player">("event");
 
   const openScorer = (side: "home" | "away") => {
     setScorerTeam(side);
     setSelectedEvent(null);
+    setSelectedZone(null);
+    setSelectedAction(null);
+    setStep("event");
     setScorerOpen(true);
   };
 
@@ -132,18 +304,45 @@ export default function MatchDetails() {
     setScorerOpen(false);
     setScorerTeam(null);
     setSelectedEvent(null);
+    setSelectedZone(null);
+    setSelectedAction(null);
+    setStep("event");
   };
 
   const handleEventType = (type: EventType) => {
     setSelectedEvent(type);
+    if (NEEDS_ZONE.has(type)) {
+      setStep("zone_action");
+    } else {
+      setStep("player");
+    }
+  };
+
+  const handleBack = () => {
+    if (step === "player" && NEEDS_ZONE.has(selectedEvent!)) {
+      setStep("zone_action");
+    } else if (step === "zone_action" || step === "player") {
+      setStep("event");
+      setSelectedEvent(null);
+      setSelectedZone(null);
+      setSelectedAction(null);
+    }
   };
 
   const handlePlayerSelect = (playerId?: number) => {
     if (!scorerTeam || !selectedEvent || !match) return;
     const teamId = scorerTeam === "home" ? match.homeTeamId : match.awayTeamId;
-    createEvent.mutate({ teamId, playerId, type: selectedEvent, time: timerSeconds }, {
-      onSuccess: () => closeScorer(),
-    });
+    createEvent.mutate(
+      {
+        teamId,
+        playerId,
+        type: selectedEvent,
+        time: timerSeconds,
+        shotZone: selectedZone ?? undefined,
+        actionType: selectedAction ?? undefined,
+      },
+      { onSuccess: () => closeScorer() }
+    );
   };
 
   const formatTime = (s: number) => {
@@ -173,6 +372,8 @@ export default function MatchDetails() {
     exportMatchPdf(match, homePlayers ?? [], awayPlayers ?? []);
   };
 
+  const canProceedToPlayer = !NEEDS_ZONE.has(selectedEvent!) || (selectedZone !== null);
+
   return (
     <div className="min-h-screen bg-background">
       <PageHeader
@@ -195,9 +396,7 @@ export default function MatchDetails() {
       {/* Scoreboard */}
       <div className="bg-zinc-900 text-white px-4 py-6">
         <div className="max-w-lg mx-auto">
-          {/* Teams & Score */}
           <div className="flex items-center justify-between gap-2">
-            {/* Home */}
             <div className="flex-1 flex flex-col items-center gap-2 text-center">
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-bold border-2 border-white/20"
@@ -209,13 +408,10 @@ export default function MatchDetails() {
               <span className="text-5xl font-bold font-mono" data-testid="score-home">{match.homeScore ?? 0}</span>
             </div>
 
-            {/* Status */}
             <div className="flex flex-col items-center gap-2 shrink-0">
               <span className="text-2xl font-bold opacity-30">:</span>
               {isLive && (
-                <span className="text-xs font-bold text-red-400 uppercase tracking-widest animate-pulse">
-                  Live
-                </span>
+                <span className="text-xs font-bold text-red-400 uppercase tracking-widest animate-pulse">Live</span>
               )}
               {isFinished && (
                 <span className="text-xs text-zinc-400 uppercase tracking-wider">Final</span>
@@ -225,7 +421,6 @@ export default function MatchDetails() {
               )}
             </div>
 
-            {/* Away */}
             <div className="flex-1 flex flex-col items-center gap-2 text-center">
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center text-sm font-bold border-2 border-white/20"
@@ -238,7 +433,6 @@ export default function MatchDetails() {
             </div>
           </div>
 
-          {/* Timer & Controls */}
           <div className="mt-6 flex flex-col items-center gap-3">
             {isLive && (
               <div className="flex items-center gap-3">
@@ -269,10 +463,7 @@ export default function MatchDetails() {
             {match.status === "scheduled" && (
               <Button
                 className="bg-green-600 hover:bg-green-500 text-white rounded-full px-8"
-                onClick={() => {
-                  updateStatus.mutate("in_progress");
-                  setTimerRunning(true);
-                }}
+                onClick={() => { updateStatus.mutate("in_progress"); setTimerRunning(true); }}
                 disabled={updateStatus.isPending}
                 data-testid="button-start-match"
               >
@@ -308,7 +499,7 @@ export default function MatchDetails() {
               data-testid="button-home-action"
             >
               <div className="w-5 h-5 rounded-full" style={{ backgroundColor: homeTeam.color }} />
-              {homeTeam.shortName} Action
+              {homeTeam.shortName} Akcija
             </Button>
             <Button
               variant="outline"
@@ -318,7 +509,7 @@ export default function MatchDetails() {
               data-testid="button-away-action"
             >
               <div className="w-5 h-5 rounded-full" style={{ backgroundColor: awayTeam.color }} />
-              {awayTeam.shortName} Action
+              {awayTeam.shortName} Akcija
             </Button>
           </div>
         )}
@@ -326,12 +517,12 @@ export default function MatchDetails() {
         {/* Event Log */}
         <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-border/50 bg-muted/20">
-            <h3 className="font-bold text-sm">Match Events</h3>
+            <h3 className="font-bold text-sm">Tok utakmice</h3>
           </div>
           <div className="divide-y divide-border/30 max-h-96 overflow-y-auto">
             {(!match.events || match.events.length === 0) && (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                No events recorded yet.
+                Nema zabilježenih akcija.
               </div>
             )}
             {match.events?.map((event: any) => {
@@ -343,21 +534,25 @@ export default function MatchDetails() {
               return (
                 <div
                   key={event.id}
-                  className={cn(
-                    "px-4 py-3 flex items-center gap-3",
-                    isHome ? "" : "flex-row-reverse"
-                  )}
+                  className={cn("px-4 py-3 flex items-center gap-3", isHome ? "" : "flex-row-reverse")}
                   data-testid={`event-row-${event.id}`}
                 >
                   <div
                     className="w-1 h-8 rounded-full shrink-0"
                     style={{ backgroundColor: isHome ? homeTeam.color : awayTeam.color }}
                   />
-                  <div className={cn("flex-1", !isHome && "text-right")}>
+                  <div className={cn("flex-1 min-w-0", !isHome && "text-right")}>
                     <div className="font-semibold text-sm">{evtDef?.label ?? event.type}</div>
                     <div className="text-xs text-muted-foreground">
                       {player ? `#${player.number} ${player.name}` : isHome ? homeTeam.name : awayTeam.name}
                     </div>
+                    {(event.shotZone || event.actionType) && (
+                      <div className="text-xs text-muted-foreground/70 mt-0.5">
+                        {[ZONE_LABEL[event.shotZone], ACTION_LABEL[event.actionType]]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    )}
                   </div>
                   <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded shrink-0">
                     {Math.floor(event.time / 60)}'
@@ -384,30 +579,39 @@ export default function MatchDetails() {
         </button>
       </main>
 
-      {/* Scorer Sheet */}
+      {/* Action Sheet */}
       <Sheet open={scorerOpen} onOpenChange={(o) => { if (!o) closeScorer(); }}>
-        <SheetContent side="bottom" className="rounded-t-3xl max-h-[90vh] overflow-y-auto p-0">
-          <div className="sticky top-0 bg-card border-b border-border px-4 py-4 flex items-center justify-between">
+        <SheetContent side="bottom" className="rounded-t-3xl max-h-[92vh] overflow-y-auto p-0">
+          {/* Header */}
+          <div className="sticky top-0 bg-card border-b border-border px-4 py-3.5 flex items-center justify-between z-10">
             <SheetTitle className="flex items-center gap-2">
-              {selectedEvent ? (
+              {step !== "event" ? (
                 <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={handleBack}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
                   data-testid="button-back-event"
                 >
                   <ChevronLeft className="w-5 h-5" />
-                  <span className="font-normal text-sm">Back</span>
+                  <span className="font-normal text-sm">Nazad</span>
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div
-                    className="w-5 h-5 rounded-full"
-                    style={{ backgroundColor: scorerTeamData?.color }}
-                  />
-                  <span>{scorerTeamData?.name}</span>
+                  <div className="w-5 h-5 rounded-full" style={{ backgroundColor: scorerTeamData?.color }} />
+                  <span className="font-semibold">{scorerTeamData?.name}</span>
                 </div>
               )}
             </SheetTitle>
+
+            {/* Step pills */}
+            {selectedEvent && (
+              <span className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-bold",
+                EVENT_TYPES.find((e) => e.type === selectedEvent)?.color
+              )}>
+                {EVENT_TYPES.find((e) => e.type === selectedEvent)?.label}
+              </span>
+            )}
+
             <button
               onClick={closeScorer}
               className="p-1 rounded-full hover:bg-muted transition-colors"
@@ -418,9 +622,10 @@ export default function MatchDetails() {
           </div>
 
           <div className="p-4 space-y-4">
-            {!selectedEvent ? (
+            {/* Step 1: Event Type */}
+            {step === "event" && (
               <>
-                <p className="text-sm text-muted-foreground font-medium">Select event type:</p>
+                <p className="text-sm text-muted-foreground font-medium">Odaberi tip akcije:</p>
                 <div className="grid grid-cols-3 gap-2">
                   {EVENT_TYPES.map((evt) => (
                     <button
@@ -438,62 +643,104 @@ export default function MatchDetails() {
                   ))}
                 </div>
               </>
-            ) : (
+            )}
+
+            {/* Step 2: Zone + Action (only for goal/shot) */}
+            {step === "zone_action" && (
               <>
-                <div className="flex items-center gap-2">
-                  <span className={cn("px-3 py-1.5 rounded-lg text-xs font-bold", EVENT_TYPES.find(e => e.type === selectedEvent)?.color)}>
-                    {EVENT_TYPES.find(e => e.type === selectedEvent)?.label}
-                  </span>
-                  <span className="text-sm text-muted-foreground">— Select player:</span>
+                {/* Court map */}
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium mb-2">
+                    Odaberi zonu šuta — tapni na terenu:
+                  </p>
+                  <HandballCourt selected={selectedZone} onSelect={setSelectedZone} />
                 </div>
 
-                <div className="space-y-2">
-                  {scorerPlayers.length === 0 ? (
-                    <div className="text-center py-6 text-sm text-muted-foreground">
-                      No players in roster.
-                      <br />
+                {/* Action type */}
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium mb-2">Tip akcije:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ACTION_TYPES.map((act) => (
                       <button
-                        onClick={() => handlePlayerSelect(undefined)}
-                        className="text-primary font-medium mt-2 hover:underline"
-                        data-testid="button-no-player"
+                        key={act.id}
+                        onClick={() => setSelectedAction(act.id === selectedAction ? null : act.id)}
+                        className={cn(
+                          "p-2.5 rounded-xl text-xs font-semibold text-left border transition-all",
+                          selectedAction === act.id
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/30 border-border hover:bg-muted text-foreground"
+                        )}
+                        data-testid={`button-action-${act.id}`}
                       >
-                        Record without player
+                        {act.label}
                       </button>
-                    </div>
-                  ) : (
-                    <>
-                      {scorerPlayers
-                        .slice()
-                        .sort((a, b) => a.number - b.number)
-                        .map((player) => (
-                          <button
-                            key={player.id}
-                            onClick={() => handlePlayerSelect(player.id)}
-                            disabled={createEvent.isPending}
-                            className="w-full flex items-center gap-3 p-3 bg-muted/30 hover:bg-muted rounded-xl transition-colors text-left active:scale-[0.98]"
-                            data-testid={`button-player-${player.id}`}
-                          >
-                            <div className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center font-bold font-mono text-sm shrink-0">
-                              {player.number}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold truncate">{player.name}</div>
-                              <div className="text-xs text-muted-foreground">{player.position}</div>
-                            </div>
-                          </button>
-                        ))}
-
-                      <button
-                        onClick={() => handlePlayerSelect(undefined)}
-                        disabled={createEvent.isPending}
-                        className="w-full p-3 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border rounded-xl transition-colors text-center"
-                        data-testid="button-team-event"
-                      >
-                        Record as Team Event (no player)
-                      </button>
-                    </>
-                  )}
+                    ))}
+                  </div>
                 </div>
+
+                {/* Next button */}
+                <Button
+                  className="w-full rounded-xl"
+                  disabled={!canProceedToPlayer}
+                  onClick={() => setStep("player")}
+                  data-testid="button-next-to-player"
+                >
+                  Odaberi igrača →
+                </Button>
+                {!selectedZone && (
+                  <p className="text-xs text-center text-muted-foreground">Tapni zonu na terenu da nastaviš</p>
+                )}
+              </>
+            )}
+
+            {/* Step 3: Player */}
+            {step === "player" && (
+              <>
+                {scorerPlayers.length === 0 ? (
+                  <div className="text-center py-6 text-sm text-muted-foreground">
+                    Nema igrača u timu.
+                    <br />
+                    <button
+                      onClick={() => handlePlayerSelect(undefined)}
+                      className="text-primary font-medium mt-2 hover:underline"
+                      data-testid="button-no-player"
+                    >
+                      Zabilježi bez igrača
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {scorerPlayers
+                      .slice()
+                      .sort((a, b) => a.number - b.number)
+                      .map((player) => (
+                        <button
+                          key={player.id}
+                          onClick={() => handlePlayerSelect(player.id)}
+                          disabled={createEvent.isPending}
+                          className="w-full flex items-center gap-3 p-3 bg-muted/30 hover:bg-muted rounded-xl transition-colors text-left active:scale-[0.98]"
+                          data-testid={`button-player-${player.id}`}
+                        >
+                          <div className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center font-bold font-mono text-sm shrink-0">
+                            {player.number}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold truncate">{player.name}</div>
+                            <div className="text-xs text-muted-foreground">{player.position}</div>
+                          </div>
+                        </button>
+                      ))}
+
+                    <button
+                      onClick={() => handlePlayerSelect(undefined)}
+                      disabled={createEvent.isPending}
+                      className="w-full p-3 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border rounded-xl transition-colors text-center"
+                      data-testid="button-team-event"
+                    >
+                      Zabilježi kao timsku akciju (bez igrača)
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -505,14 +752,13 @@ export default function MatchDetails() {
 
 function StatsSummary({ events, homeTeam, awayTeam }: { events: any[]; homeTeam: Team; awayTeam: Team }) {
   const stats = ["goal", "shot", "save", "assist", "turnover", "block", "yellow_card", "2min", "red_card"];
-
   const count = (teamId: number, type: string) =>
     events.filter((e) => e.teamId === teamId && e.type === type).length;
 
   return (
     <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
       <div className="px-4 py-3 border-b border-border/50 bg-muted/20">
-        <h3 className="font-bold text-sm">Stats</h3>
+        <h3 className="font-bold text-sm">Statistika</h3>
       </div>
       <div className="divide-y divide-border/20">
         {stats.map((stat) => {
@@ -521,7 +767,6 @@ function StatsSummary({ events, homeTeam, awayTeam }: { events: any[]; homeTeam:
           if (homeCount === 0 && awayCount === 0) return null;
           const label = EVENT_TYPES.find((e) => e.type === stat)?.label ?? stat;
           const total = homeCount + awayCount;
-
           return (
             <div key={stat} className="px-4 py-3">
               <div className="flex items-center justify-between mb-1.5">
