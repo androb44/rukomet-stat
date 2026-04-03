@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { serveStatic } from "./static";
 import { createServer } from "http";
 
 const app = express();
@@ -75,28 +74,14 @@ app.use((req, res, next) => {
     return res.status(status).json({ message });
   });
 
-  // Serve lightweight mobile app instead of React/Vite
-  const path = await import("path");
-  const fs = await import("fs");
-  const publicPath = path.default.resolve(process.cwd(), "public");
-  
-  // Serve static files from public directory
-  app.use(express.static(publicPath));
-  
-  // Fallback to index.html for all other routes
-  app.use((req, res) => {
-    const indexPath = path.default.resolve(publicPath, "index.html");
-    if (fs.default.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      res.status(404).send("App not found");
-    }
-  });
+  if (process.env.NODE_ENV === "development") {
+    const { setupVite } = await import("./vite");
+    await setupVite(httpServer, app);
+  } else {
+    const { serveStatic } = await import("./static");
+    serveStatic(app);
+  }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen(
     {

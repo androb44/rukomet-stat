@@ -16,6 +16,7 @@ import {
   Clock,
   ChevronLeft,
   X,
+  FileDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Team, Player } from "@shared/schema";
@@ -167,9 +168,29 @@ export default function MatchDetails() {
   const scorerPlayers = scorerTeam === "home" ? (homePlayers ?? []) : (awayPlayers ?? []);
   const scorerTeamData = scorerTeam === "home" ? homeTeam : awayTeam;
 
+  const handleExportPdf = async () => {
+    const { exportMatchPdf } = await import("@/lib/export-pdf");
+    exportMatchPdf(match, homePlayers ?? [], awayPlayers ?? []);
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <PageHeader title="Match" backTo="/matches" />
+      <PageHeader
+        title="Match"
+        backTo="/matches"
+        action={
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-full gap-1.5"
+            onClick={handleExportPdf}
+            data-testid="button-export-pdf"
+          >
+            <FileDown className="w-4 h-4" />
+            PDF
+          </Button>
+        }
+      />
 
       {/* Scoreboard */}
       <div className="bg-zinc-900 text-white px-4 py-6">
@@ -351,6 +372,16 @@ export default function MatchDetails() {
         {match.events && match.events.length > 0 && (
           <StatsSummary events={match.events} homeTeam={homeTeam} awayTeam={awayTeam} />
         )}
+
+        {/* Export PDF */}
+        <button
+          onClick={handleExportPdf}
+          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-dashed border-primary/30 text-primary font-semibold text-sm hover:bg-primary/5 transition-colors active:scale-[0.98]"
+          data-testid="button-export-pdf"
+        >
+          <FileDown className="w-5 h-5" />
+          Export Match Report as PDF
+        </button>
       </main>
 
       {/* Scorer Sheet */}

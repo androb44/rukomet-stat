@@ -62,6 +62,16 @@ Preferred communication style: Simple, everyday language.
    - Event log showing player attribution (#7 John Hansen)
    - Stats summary with bar charts comparing both teams
 
+## PDF Export
+
+Match details page includes an "Export Match Report as PDF" button at the bottom. It generates a PDF report containing:
+- Match header with team colors, short names, and final score
+- Team statistics table (goals, shots, saves, assists, turnovers, blocks, cards)
+- Player statistics tables for both teams
+- Complete event log (chronological, with player names and minute)
+- Generated client-side using `jspdf` + `jspdf-autotable` (no server needed)
+- Filename format: `Match_DEN_vs_FRA_20260101.pdf`
+
 ## External Dependencies
 
 ### Database
