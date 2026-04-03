@@ -5,6 +5,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import path from "path";
 import fs from "fs";
+import { generateMatchPdf } from "./pdf";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -136,6 +137,23 @@ export async function registerRoutes(
       } else {
         throw err;
       }
+    }
+  });
+
+  // Match PDF Export
+  app.get("/api/matches/:id/pdf", async (req, res) => {
+    try {
+      const match = await storage.getMatch(Number(req.params.id));
+      if (!match) return res.status(404).json({ message: "Match not found" });
+
+      const events = await storage.getMatchEvents(match.id);
+      const homePlayers = await storage.getPlayers(match.homeTeamId);
+      const awayPlayers = await storage.getPlayers(match.awayTeamId);
+
+      generateMatchPdf({ ...match, events }, homePlayers, awayPlayers, res);
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      res.status(500).json({ message: "Failed to generate PDF" });
     }
   });
 

@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Play,
   Square,
@@ -271,15 +270,6 @@ export default function MatchDetails() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [timerRunning]);
 
-  // PDF preview state
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
-  const [pdfFilename, setPdfFilename] = useState<string>("");
-
-  const closePdfPreview = () => {
-    if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
-    setPdfPreviewUrl(null);
-  };
-
   // Sheet state
   const [scorerOpen, setScorerOpen] = useState(false);
   const [scorerTeam, setScorerTeam] = useState<"home" | "away" | null>(null);
@@ -364,18 +354,6 @@ export default function MatchDetails() {
   const scorerPlayers = scorerTeam === "home" ? (homePlayers ?? []) : (awayPlayers ?? []);
   const scorerTeamData = scorerTeam === "home" ? homeTeam : awayTeam;
 
-  const handleExportPdf = async () => {
-    try {
-      const { buildPdfBlob } = await import("@/lib/export-pdf");
-      const { blob, filename } = buildPdfBlob(match, homePlayers ?? [], awayPlayers ?? []);
-      const url = URL.createObjectURL(blob);
-      setPdfFilename(filename);
-      setPdfPreviewUrl(url);
-    } catch (e) {
-      toast({ title: t("match.failEvent"), variant: "destructive" });
-    }
-  };
-
   const selectedEventDef = EVENT_TYPES.find((e) => e.type === selectedEvent);
 
   return (
@@ -384,16 +362,16 @@ export default function MatchDetails() {
         title={t("match.title")}
         backTo="/matches"
         action={
-          <Button
-            size="sm"
-            variant="outline"
-            className="rounded-full gap-1.5"
-            onClick={handleExportPdf}
+          <a
+            href={`/api/matches/${matchId}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
             data-testid="button-export-pdf"
+            className="inline-flex items-center gap-1.5 rounded-full border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <FileDown className="w-4 h-4" />
             PDF
-          </Button>
+          </a>
         }
       />
 
@@ -580,39 +558,17 @@ export default function MatchDetails() {
         )}
 
         {/* Export PDF */}
-        <button
-          onClick={handleExportPdf}
+        <a
+          href={`/api/matches/${matchId}/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-dashed border-primary/30 text-primary font-semibold text-sm hover:bg-primary/5 transition-colors active:scale-[0.98]"
           data-testid="button-export-pdf-bottom"
         >
           <FileDown className="w-5 h-5" />
           {t("match.exportPdf")}
-        </button>
+        </a>
       </main>
-
-      {/* PDF Preview Dialog */}
-      <Dialog open={!!pdfPreviewUrl} onOpenChange={(o) => { if (!o) closePdfPreview(); }}>
-        <DialogContent className="max-w-3xl w-full h-[90vh] flex flex-col p-0 gap-0 rounded-2xl overflow-hidden">
-          <DialogHeader className="px-4 py-3 border-b border-border flex-row items-center justify-between shrink-0">
-            <DialogTitle className="text-sm font-semibold truncate">{pdfFilename}</DialogTitle>
-            <a
-              href={pdfPreviewUrl ?? ""}
-              download={pdfFilename}
-              className="shrink-0 ml-3 flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full hover:bg-primary/90 transition-colors"
-            >
-              <FileDown className="w-3.5 h-3.5" />
-              Download
-            </a>
-          </DialogHeader>
-          {pdfPreviewUrl && (
-            <iframe
-              src={pdfPreviewUrl}
-              className="flex-1 w-full border-none"
-              title="PDF Preview"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Action Sheet */}
       <Sheet open={scorerOpen} onOpenChange={(o) => { if (!o) closeScorer(); }}>
