@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import type { Team, Player } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useT, useLanguage } from "@/lib/i18n";
+import { generateMatchPdfBrowser } from "@/lib/matchPdf";
 
 const EVENT_TYPES = [
   { type: "goal",        labelKey: "event.goal",        icon: Trophy,        color: "bg-green-500 hover:bg-green-600 text-white" },
@@ -404,6 +405,31 @@ export default function MatchDetails() {
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   };
 
+  const downloadPdf = () => {
+    if (!match) return;
+    try {
+      generateMatchPdfBrowser(
+        {
+          id: match.id,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeScore: match.homeScore ?? 0,
+          awayScore: match.awayScore ?? 0,
+          date: match.date,
+          location: match.location ?? "",
+          status: match.status,
+          events: match.events ?? [],
+        },
+        homePlayers ?? [],
+        awayPlayers ?? [],
+        lang as "bs" | "en" | "de" | "fr",
+      );
+    } catch (e) {
+      console.error(e);
+      toast({ title: "PDF", description: String(e), variant: "destructive" });
+    }
+  };
+
   if (isLoading || !match) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -431,16 +457,15 @@ export default function MatchDetails() {
         title={t("match.title")}
         backTo="/matches"
         action={
-          <a
-            href={`/api/matches/${matchId}/pdf?lang=${lang}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={downloadPdf}
             data-testid="button-export-pdf"
             className="inline-flex items-center gap-1.5 rounded-full border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <FileDown className="w-4 h-4" />
             PDF
-          </a>
+          </button>
         }
       />
 
@@ -627,16 +652,15 @@ export default function MatchDetails() {
         )}
 
         {/* Export PDF */}
-        <a
-          href={`/api/matches/${matchId}/pdf?lang=${lang}`}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={downloadPdf}
           className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-dashed border-primary/30 text-primary font-semibold text-sm hover:bg-primary/5 transition-colors active:scale-[0.98]"
           data-testid="button-export-pdf-bottom"
         >
           <FileDown className="w-5 h-5" />
           {t("match.exportPdf")}
-        </a>
+        </button>
       </main>
 
       {/* Action Sheet */}
